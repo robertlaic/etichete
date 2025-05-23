@@ -460,26 +460,18 @@
             const mainLabel = `${specia}_${tip}_${nume}_${calitate}`;
             const mainDimension = `${lungime}x${latime}x${grosime}`;
             
-            // Generate label content
+            // Generate label content - only the main code
             const labelContent = document.getElementById('label-content');
             labelContent.textContent = mainLabel;
             
-            // Generate dimensions content
+            // Generate dimensions content with proper format
             const dimensionsContent = document.getElementById('label-dimensions');
-            let dimensionsHTML = `${mainDimension}`;
-            
-            // Add bucket count for main dimension
-            if (bucati) {
-                dimensionsHTML += ` - ${bucati} BUC.`;
-            }
+            let dimensionsHTML = `${mainDimension} - ${bucati} BUC.`;
             
             // Add additional dimensions
             additionalDimensions.forEach(dim => {
-                if (dim.L && dim.l && dim.G) {
-                    dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G}`;
-                    if (dim.bucati) {
-                        dimensionsHTML += ` - ${dim.bucati} BUC.`;
-                    }
+                if (dim.L && dim.l && dim.G && dim.bucati) {
+                    dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G} - ${dim.bucati} BUC.`;
                 }
             });
             
@@ -489,24 +481,16 @@
             const qrContainer = document.getElementById('qr-container');
             qrContainer.innerHTML = '';
             
-            // Build QR data with new format
+            // Build QR data with correct format
             let qrDataLines = [];
             
             // First line: main dimension with buckets
-            let mainLine = `${mainLabel}_${mainDimension}`;
-            if (bucati) {
-                mainLine += ` | ${bucati}`;
-            }
-            qrDataLines.push(mainLine);
+            qrDataLines.push(`${mainLabel}_${mainDimension} | ${bucati}`);
             
             // Additional dimensions - each on its own line
             additionalDimensions.forEach(dim => {
-                if (dim.L && dim.l && dim.G) {
-                    let dimLine = `${mainLabel}_${dim.L}x${dim.l}x${dim.G}`;
-                    if (dim.bucati) {
-                        dimLine += ` | ${dim.bucati}`;
-                    }
-                    qrDataLines.push(dimLine);
+                if (dim.L && dim.l && dim.G && dim.bucati) {
+                    qrDataLines.push(`${mainLabel}_${dim.L}x${dim.l}x${dim.G} | ${dim.bucati}`);
                 }
             });
             
@@ -527,14 +511,9 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
             
-            // Add "COD QR" text
-            const qrLabel = document.createElement('div');
-            qrLabel.style.textAlign = 'center';
-            qrLabel.style.marginTop = '10px';
-            qrLabel.style.fontSize = '24px';
-            qrLabel.style.fontWeight = 'bold';
-            qrLabel.textContent = 'COD QR';
-            qrContainer.appendChild(qrLabel);
+            // Remove "COD QR" text - QR code only
+            
+            // Remove "COD QR" text - QR code only
             
             // Show preview
             document.getElementById('preview-container').style.display = 'block';
