@@ -29,26 +29,3 @@
 }
 
 
-/* 2. Ascunde toată interfața de editing, păstrând doar preview-ul */
-@media print {
-  .container > :not(.preview-container) {
-    display: none !important;
-  }
-
-  /* 3. Stil curat pentru preview */
-  .preview-container {
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-
-  .label-preview {
-    border: none !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 40px !important;
-    page-break-inside: avoid;
-  }
-}
