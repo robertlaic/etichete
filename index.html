@@ -5,36 +5,193 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplicație Tipărire Etichete A4 - Depozit</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="print.css" media="print">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+
+            #preview-container, 
+            #preview-container * {
+                visibility: visible !important;
+            }
+
+            #preview-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 297mm;
+                height: 210mm;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+                page-break-after: avoid;
+                page-break-before: avoid;
+                page-break-inside: avoid;
+                background: white;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .label-preview {
+                width: 100% !important;
+                height: 100% !important;
+                box-sizing: border-box;
+                page-break-after: avoid;
+                page-break-before: avoid;
+                page-break-inside: avoid;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%); min-height: 100vh; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); padding: 30px; backdrop-filter: blur(10px); }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #BD3033; font-size: 2.5em; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.1em; }
+
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .form-group { display: flex; flex-direction: column; }
         label { font-weight: 600; color: #555; margin-bottom: 8px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
         select, input { padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: all 0.3s ease; background: white; }
         select:focus, input:focus { outline: none; border-color: #BD3033; box-shadow: 0 0 0 3px rgba(189, 48, 51, 0.1); }
-        .dimensions-group input { flex: 1; padding: 16px; font-size: 18px; }
-        .location-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .button-group { display: flex; gap: 15px; margin-top: 30px; justify-content: center; }
+        
+        .dimensions-group input { flex: 1; padding: 20px; font-size: 20px; font-weight: bold; }
+        
+        .location-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+        .location-group select { padding: 4px; font-size: 11px; }
+        
+        .button-group { display: flex; gap: 15px; margin-top: 30px; justify-content: center; flex-wrap: wrap; }
         button { padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
         .btn-primary { background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%); color: white; }
         .btn-secondary { background: #f5f5f5; color: #333; border: 2px solid #e0e0e0; }
+        .btn-scanner { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; }
+        
         .preview-container { margin-top: 30px; border: 2px dashed #e0e0e0; border-radius: 10px; padding: 20px; min-height: 200px; background: #fafafa; }
         .label-preview { background: white; padding: 40px; border: 1px solid #ddd; position: relative; width: 297mm; height: 210mm; margin: 0 auto; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); }
         .label-content { font-family: Arial, sans-serif; font-size: 96px; font-weight: bold; line-height: 1.3; }
         .label-dimensions { margin-top: 40px; font-size: 72px; line-height: 1.5; }
         .qr-container { position: absolute; bottom: 40px; right: 40px; border: 2px solid #333; padding: 10px; background: white; }
-        .dimensions-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .dimension-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f5f5f5; border-radius: 8px; }
-        .dimension-item input { width: 120px; padding: 12px; font-size: 16px; }
-        .btn-remove { background: #ff4444; color: white; padding: 5px 15px; font-size: 14px; }
-        .btn-add { background: #4CAF50; color: white; padding: 8px 20px; font-size: 14px; margin-top: 10px; }
+        
+        .dimensions-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .dimension-item { display: flex; align-items: center; gap: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+        .dimension-item input { width: 150px; padding: 18px; font-size: 18px; font-weight: bold; }
+        .btn-remove { background: #ff4444; color: white; padding: 8px 20px; font-size: 14px; border-radius: 6px; }
+        .btn-add { background: #4CAF50; color: white; padding: 12px 25px; font-size: 16px; margin-top: 15px; border-radius: 8px; }
+
+        /* Scanner Styles */
+        .scanner-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 1000; }
+        .scanner-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 15px; padding: 20px; max-width: 500px; width: 90%; }
+        .scanner-video { width: 100%; height: 300px; border-radius: 10px; }
+        .scanner-controls { display: flex; justify-content: space-between; margin-top: 20px; }
+        .scanner-status { text-align: center; margin: 15px 0; font-weight: bold; color: #BD3033; }
+
+        .notification { position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 1001; display: none; }
+        .notification.error { background: #ff4444; }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="header">
+            <h1>🏭 Etichetare Depozit</h1>
+            <p>Generare și tipărire etichete pentru produse</p>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Denumire Produs</label>
+                <input type="text" id="product-name" placeholder="Introduceți denumirea produsului">
+            </div>
+
+            <div class="form-group">
+                <label>Cod Produs</label>
+                <input type="text" id="product-code" placeholder="Cod unic produs">
+            </div>
+
+            <div class="form-group">
+                <label>Categorie</label>
+                <select id="category">
+                    <option value="">Selectați categoria</option>
+                    <option value="electronice">Electronice</option>
+                    <option value="textile">Textile</option>
+                    <option value="alimentare">Alimentare</option>
+                    <option value="mobila">Mobilă</option>
+                    <option value="carti">Cărți</option>
+                    <option value="jucarii">Jucării</option>
+                    <option value="altele">Altele</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Locație în Depozit</label>
+                <div class="location-group">
+                    <select id="corridor">
+                        <option value="">Culoar</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                    <select id="rack">
+                        <option value="">Raft</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <select id="shelf">
+                        <option value="">Etaj</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                    <select id="position">
+                        <option value="">Poz</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Dimensiuni Principale (L x l x Î - cm)</label>
+            <div class="dimensions-group" style="display: flex; gap: 10px;">
+                <input type="number" id="main-length" placeholder="Lungime">
+                <input type="number" id="main-width" placeholder="Lățime">
+                <input type="number" id="main-height" placeholder="Înălțime">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Dimensiuni Adiționale</label>
+            <div class="dimensions-list" id="dimensions-list"></div>
+            <button type="button" class="btn-add" onclick="addDimension()">+ Adaugă Dimensiune</button>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-scanner" onclick="startScanner()">📱 Scanează QR</button>
+            <button class="btn-primary" onclick="generatePreview()">👁️ Previzualizare</button>
+            <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge Tot</button>
+            <button class="btn-primary" onclick="printLabel()">🖨️ Tipărește</button>
+        </div>
+
         <div class="preview-container" id="preview-container" style="display: none;">
             <div class="label-preview" id="label-preview">
                 <div class="label-content" id="label-content"></div>
@@ -43,26 +200,216 @@
             </div>
         </div>
     </div>
+
+    <!-- Scanner Modal -->
+    <div class="scanner-container" id="scanner-container">
+        <div class="scanner-content">
+            <h3 style="text-align: center; margin-bottom: 20px;">Scanează Cod QR</h3>
+            <video id="scanner-video" class="scanner-video"></video>
+            <div class="scanner-status" id="scanner-status">Poziționează codul QR în fața camerei</div>
+            <div class="scanner-controls">
+                <button class="btn-secondary" onclick="stopScanner()">Anulează</button>
+                <button class="btn-primary" onclick="switchCamera()" id="switch-camera">Schimbă Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
     <script>
+        let qrScanner = null;
+        let currentCamera = 'environment';
+
         function addDimension() {
             const container = document.getElementById('dimensions-list');
             if (container.children.length >= 3) return;
+            
             const wrapper = document.createElement('div');
             wrapper.className = 'dimension-item';
             wrapper.innerHTML = `
-                <input type="number" placeholder="L">
-                <input type="number" placeholder="l">
-                <input type="number" placeholder="G">
-                <button class="btn-remove" onclick="this.parentElement.remove()">X</button>
+                <input type="number" placeholder="Lungime (cm)">
+                <input type="number" placeholder="Lățime (cm)">
+                <input type="number" placeholder="Înălțime (cm)">
+                <button class="btn-remove" onclick="this.parentElement.remove()">🗑️ Șterge</button>
             `;
             container.appendChild(wrapper);
         }
+
         function generatePreview() {
+            const productName = document.getElementById('product-name').value || 'Produs Necunoscut';
+            const productCode = document.getElementById('product-code').value || 'N/A';
+            const category = document.getElementById('category').value || 'N/A';
+            
+            const corridor = document.getElementById('corridor').value;
+            const rack = document.getElementById('rack').value;
+            const shelf = document.getElementById('shelf').value;
+            const position = document.getElementById('position').value;
+            const location = `${corridor}${rack}${shelf}${position}` || 'N/A';
+
+            const mainLength = document.getElementById('main-length').value;
+            const mainWidth = document.getElementById('main-width').value;
+            const mainHeight = document.getElementById('main-height').value;
+
+            // Construiește textul pentru dimensiuni
+            let dimensionsText = '';
+            if (mainLength && mainWidth && mainHeight) {
+                dimensionsText = `${mainLength} × ${mainWidth} × ${mainHeight} cm\n`;
+            }
+
+            // Adaugă dimensiunile adiționale
+            const additionalDimensions = document.querySelectorAll('.dimension-item');
+            additionalDimensions.forEach(item => {
+                const inputs = item.querySelectorAll('input');
+                if (inputs[0].value && inputs[1].value && inputs[2].value) {
+                    dimensionsText += `${inputs[0].value} × ${inputs[1].value} × ${inputs[2].value} cm\n`;
+                }
+            });
+
+            // Actualizează previzualizarea
+            document.getElementById('label-content').innerHTML = `
+                <div style="font-size: 96px; font-weight: bold; margin-bottom: 20px;">${productName}</div>
+                <div style="font-size: 48px; color: #666;">Cod: ${productCode}</div>
+                <div style="font-size: 36px; color: #666; margin-top: 10px;">Categorie: ${category}</div>
+                <div style="font-size: 36px; color: #666; margin-top: 10px;">Locație: ${location}</div>
+            `;
+            
+            document.getElementById('label-dimensions').textContent = dimensionsText;
+
+            // Generează QR code cu toate informațiile
+            const qrData = JSON.stringify({
+                name: productName,
+                code: productCode,
+                category: category,
+                location: location,
+                dimensions: dimensionsText.trim(),
+                corridor: corridor,
+                rack: rack,
+                shelf: shelf,
+                position: position,
+                mainLength: mainLength,
+                mainWidth: mainWidth,
+                mainHeight: mainHeight
+            });
+
+            // Șterge QR-ul existent
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.innerHTML = '';
+            
+            // Generează noul QR
+            const qr = new QRCode(qrContainer, {
+                text: qrData,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff"
+            });
+
             document.getElementById('preview-container').style.display = 'block';
-            document.getElementById('label-content').textContent = 'Previzualizare';
-            document.getElementById('label-dimensions').textContent = 'Etichetă exemplu';
-            const qr = new QRCode(document.getElementById('qr-container'), { text: 'Etichetă QR', width: 128, height: 128 });
+            showNotification('Previzualizare generată cu succes!');
         }
+
+        function clearForm() {
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-code').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('corridor').value = '';
+            document.getElementById('rack').value = '';
+            document.getElementById('shelf').value = '';
+            document.getElementById('position').value = '';
+            document.getElementById('main-length').value = '';
+            document.getElementById('main-width').value = '';
+            document.getElementById('main-height').value = '';
+            document.getElementById('dimensions-list').innerHTML = '';
+            document.getElementById('preview-container').style.display = 'none';
+            showNotification('Formularul a fost resetat!');
+        }
+
+        function printLabel() {
+            if (document.getElementById('preview-container').style.display === 'none') {
+                showNotification('Generați mai întâi o previzualizare!', 'error');
+                return;
+            }
+            window.print();
+        }
+
+        async function startScanner() {
+            try {
+                const scannerContainer = document.getElementById('scanner-container');
+                const video = document.getElementById('scanner-video');
+                
+                scannerContainer.style.display = 'block';
+                
+                qrScanner = new QrScanner(video, result => {
+                    try {
+                        const data = JSON.parse(result.data);
+                        populateFormFromQR(data);
+                        stopScanner();
+                        showNotification('QR scanat cu succes!');
+                    } catch (e) {
+                        showNotification('Codul QR nu conține date valide!', 'error');
+                    }
+                }, {
+                    preferredCamera: currentCamera,
+                    highlightScanRegion: true,
+                    highlightCodeOutline: true,
+                });
+
+                await qrScanner.start();
+                document.getElementById('scanner-status').textContent = 'Scanare activă...';
+                
+            } catch (error) {
+                console.error('Eroare la pornirea scannerului:', error);
+                showNotification('Nu s-a putut accesa camera!', 'error');
+                stopScanner();
+            }
+        }
+
+        function stopScanner() {
+            if (qrScanner) {
+                qrScanner.stop();
+                qrScanner = null;
+            }
+            document.getElementById('scanner-container').style.display = 'none';
+        }
+
+        async function switchCamera() {
+            if (qrScanner) {
+                currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+                await qrScanner.setCamera(currentCamera);
+            }
+        }
+
+        function populateFormFromQR(data) {
+            if (data.name) document.getElementById('product-name').value = data.name;
+            if (data.code) document.getElementById('product-code').value = data.code;
+            if (data.category) document.getElementById('category').value = data.category;
+            if (data.corridor) document.getElementById('corridor').value = data.corridor;
+            if (data.rack) document.getElementById('rack').value = data.rack;
+            if (data.shelf) document.getElementById('shelf').value = data.shelf;
+            if (data.position) document.getElementById('position').value = data.position;
+            if (data.mainLength) document.getElementById('main-length').value = data.mainLength;
+            if (data.mainWidth) document.getElementById('main-width').value = data.mainWidth;
+            if (data.mainHeight) document.getElementById('main-height').value = data.mainHeight;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Închide scanner-ul cu ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                stopScanner();
+            }
+        });
     </script>
 </body>
 </html>
