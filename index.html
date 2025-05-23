@@ -14,7 +14,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -34,7 +34,7 @@
             margin-bottom: 30px;
             text-align: center;
             font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -71,8 +71,8 @@
         
         select:focus, input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #BD3033;
+            box-shadow: 0 0 0 3px rgba(189, 48, 51, 0.1);
         }
         
         .dimensions-group {
@@ -107,13 +107,13 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
             color: white;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 20px rgba(189, 48, 51, 0.3);
         }
         
         .btn-secondary {
@@ -306,7 +306,7 @@
         </div>
         
         <div class="form-grid" style="margin-top: 20px;">
-            <div class="form-group">
+            <div class="form-group" style="grid-column: span 2;">
                 <label>Dimensiuni inițiale (L x l x G)</label>
                 <div class="dimensions-group">
                     <input type="number" id="lungime" placeholder="Lungime">
@@ -319,7 +319,9 @@
                 <label for="bucati">Număr bucăți</label>
                 <input type="number" id="bucati" placeholder="Ex: 467">
             </div>
-            
+        </div>
+        
+        <div class="form-grid" style="margin-top: 20px;">
             <div class="form-group">
                 <label>Locație</label>
                 <div class="location-group">
@@ -396,7 +398,8 @@
                 id: id,
                 L: '',
                 l: '',
-                G: ''
+                G: '',
+                bucati: ''
             });
             
             renderDimensionsList();
@@ -427,6 +430,8 @@
                     <input type="number" placeholder="l" value="${dim.l}" onchange="updateDimension(${dim.id}, 'l', this.value)">
                     <span>x</span>
                     <input type="number" placeholder="G" value="${dim.G}" onchange="updateDimension(${dim.id}, 'G', this.value)">
+                    <span style="margin: 0 10px;">-</span>
+                    <input type="number" placeholder="Bucăți" value="${dim.bucati}" onchange="updateDimension(${dim.id}, 'bucati', this.value)" style="width: 100px;">
                     <button class="btn-remove" onclick="removeDimension(${dim.id})">Șterge</button>
                 `;
                 container.appendChild(item);
@@ -472,6 +477,9 @@
             additionalDimensions.forEach(dim => {
                 if (dim.L && dim.l && dim.G) {
                     dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G}`;
+                    if (dim.bucati) {
+                        dimensionsHTML += ` - ${dim.bucati} BUC.`;
+                    }
                 }
             });
             
@@ -487,7 +495,11 @@
             // Add additional dimensions with full label repeated
             additionalDimensions.forEach(dim => {
                 if (dim.L && dim.l && dim.G) {
-                    qrData += ` | ${mainLabel}_${dim.L}x${dim.l}x${dim.G}`;
+                    let dimData = ` | ${mainLabel}_${dim.L}x${dim.l}x${dim.G}`;
+                    if (dim.bucati) {
+                        dimData += ` | ${dim.bucati} BUC`;
+                    }
+                    qrData += dimData;
                 }
             });
             
