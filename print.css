@@ -1,17 +1,18 @@
 /* print.css */
 
+/* 1. Forțează formatul paginii la A4 landscape, fără margini implicite */
 @page {
-  size: A4 landscape;     /* forţează A4 orizontal */
-  margin: 0;              /* fără margini implicite */
+  size: A4 landscape;
+  margin: 0;
 }
 
+/* 2. Ascunde toată interfața de editing, păstrând doar preview-ul */
 @media print {
-  /* 1) Ascunde toată interfața de editare */
   .container > :not(.preview-container) {
     display: none !important;
   }
 
-  /* 2) Forţează preview-ul să ocupe tot ecranul paginii */
+  /* 3. Stil curat pentru preview */
   .preview-container {
     display: block !important;
     margin: 0 !important;
@@ -19,13 +20,12 @@
     background: white !important;
   }
 
-  /* 3) Elimină umbre, borduri: curat și profesional */
   .label-preview {
     border: none !important;
     box-shadow: none !important;
     width: 100% !important;
     height: auto !important;
-    padding: 40px !important; /* păstrezi padding-ul de etichetă */
+    padding: 40px !important;
     page-break-inside: avoid;
   }
 }
