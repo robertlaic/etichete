@@ -29,15 +29,21 @@
             backdrop-filter: blur(10px);
         }
         
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+       h1 {
+                color: #333;
+                margin-bottom: 30px;
+                text-align: center;
+                font-size: 2.5em;
+                background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
+                
+                /* varianta standard înainte */
+                background-clip: text;
+                /* prefixată pentru WebKit */
+                -webkit-background-clip: text;
+                /* pentru a face textul transparent şi a vedea doar gradientul */
+                -webkit-text-fill-color: transparent;
+            }
+
         
         .form-grid {
             display: grid;
