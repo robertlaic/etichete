@@ -60,6 +60,7 @@
             background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
         }
         
         .container {
@@ -267,7 +268,6 @@
             background: #45a049;
         }
 
-        /* Scanner Styles */
         .scanner-container {
             display: none;
             position: fixed;
@@ -505,7 +505,6 @@
         </div>
     </div>
 
-    <!-- Scanner Modal -->
     <div class="scanner-container" id="scanner-container">
         <div class="scanner-content">
             <h3 style="text-align: center; margin-bottom: 20px;">Scanează Cod QR</h3>
@@ -520,7 +519,6 @@
         </div>
     </div>
 
-    <!-- Notification -->
     <div class="notification" id="notification"></div>
     
     <script>
@@ -529,32 +527,20 @@
         let currentCamera = 'environment';
         let scanInterval = null;
         
-        // Funcția pentru actualizarea opțiunilor NUME bazate pe TIP
         function updateNumeOptions() {
-            console.log('updateNumeOptions called'); // Debug
             const tipSelect = document.getElementById('tip');
             const numeSelect = document.getElementById('nume');
             
-            if (!tipSelect || !numeSelect) {
-                console.error('Elements not found!');
-                return;
-            }
+            if (!tipSelect || !numeSelect) return;
             
             const selectedTip = tipSelect.value;
-            console.log('Selected TIP:', selectedTip); // Debug
-            
-            // Store current selection
             const currentSelection = numeSelect.value;
             
-            // Clear all options
             numeSelect.innerHTML = '<option value="">Selectează...</option>';
             
             if (selectedTip === 'DIM' || selectedTip === 'DIV') {
-                // Pentru DIM și DIV, arată doar C24
                 numeSelect.innerHTML += '<option value="C24">C24</option>';
-                console.log('Added only C24 for DIM/DIV');
             } else if (selectedTip === 'SF') {
-                // Pentru SF, arată toate opțiunile EXCEPTÂND C24
                 const sfOptions = [
                     'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC', 
                     'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF', 
@@ -564,9 +550,7 @@
                 sfOptions.forEach(option => {
                     numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
                 });
-                console.log('Added SF options (no C24)');
             } else {
-                // Dacă niciun tip nu este selectat, arată toate opțiunile
                 const allOptions = [
                     'C24', 'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC',
                     'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF',
@@ -576,15 +560,12 @@
                 allOptions.forEach(option => {
                     numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
                 });
-                console.log('Added all options');
             }
             
-            // Încearcă să restaureze selecția anterioară dacă este încă validă
             if (currentSelection && numeSelect.querySelector(`option[value="${currentSelection}"]`)) {
                 numeSelect.value = currentSelection;
             }
         }
-        
         
         function addDimension() {
             if (additionalDimensions.length >= 3) {
@@ -655,19 +636,15 @@
                 return;
             }
             
-            // Generate main label
             const mainLabel = `${specia}_${tip}_${nume}_${calitate}`;
             const mainDimension = `${lungime}x${latime}x${grosime}`;
             
-            // Generate label content - only the main code
             const labelContent = document.getElementById('label-content');
             labelContent.textContent = mainLabel;
             
-            // Generate dimensions content with proper format
             const dimensionsContent = document.getElementById('label-dimensions');
             let dimensionsHTML = `${mainDimension} - ${bucati} BUC.`;
             
-            // Add additional dimensions
             additionalDimensions.forEach(dim => {
                 if (dim.L && dim.l && dim.G && dim.bucati) {
                     dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G} - ${dim.bucati} BUC.`;
@@ -676,29 +653,22 @@
             
             dimensionsContent.innerHTML = dimensionsHTML;
             
-            // Generate QR code
             const qrContainer = document.getElementById('qr-container');
             qrContainer.innerHTML = '';
             
-            // Build QR data with correct format
             let qrDataLines = [];
-            
-            // First line: main dimension with buckets
             qrDataLines.push(`${mainLabel}_${mainDimension} | ${bucati}`);
             
-            // Additional dimensions - each on its own line
             additionalDimensions.forEach(dim => {
                 if (dim.L && dim.l && dim.G && dim.bucati) {
                     qrDataLines.push(`${mainLabel}_${dim.L}x${dim.l}x${dim.G} | ${dim.bucati}`);
                 }
             });
             
-            // Add location on the last line
             if (perete && coloana && rand) {
                 qrDataLines.push(`${perete}-${coloana}-${rand}`);
             }
             
-            // Join all lines with newline
             const qrData = qrDataLines.join('\n');
             
             new QRCode(qrContainer, {
@@ -710,7 +680,6 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
             
-            // Show preview
             document.getElementById('preview-container').style.display = 'block';
             showNotification('Previzualizare generată cu succes!');
         }
@@ -733,7 +702,6 @@
             showNotification('Formularul a fost resetat!');
         }
 
-        // Scanner Functions
         async function startScanner() {
             const scannerContainer = document.getElementById('scanner-container');
             const videoElement = document.getElementById('scanner-video');
@@ -765,7 +733,6 @@
                 startQRDetection(video);
                 
             } catch (error) {
-                console.error('Eroare camera:', error);
                 videoElement.innerHTML = '<div class="status-message">Eroare: Nu s-a putut accesa camera</div>';
                 showNotification('Nu s-a putut accesa camera!', 'error');
             }
@@ -790,7 +757,6 @@
                             stopScanner();
                             showNotification('QR scanat cu succes!');
                         } catch (e) {
-                            console.error('Eroare parsare QR:', e);
                             showNotification('Format QR nerecunoscut - se continuă scanarea...', 'error');
                         }
                     }
@@ -799,9 +765,6 @@
         }
 
         function detectQR(imageData) {
-            // Implementare simplificată pentru detectarea QR
-            // În realitate ai nevoie de o bibliotecă specializată
-            // Pentru demo, vom simula detectarea unui QR
             return null;
         }
 
@@ -828,39 +791,31 @@
         }
 
         function populateFormFromQR(qrData) {
-            // Parsează datele din QR
             const lines = qrData.split('\n');
-            
-            // Resetează formularul
             clearForm();
             
-            // Parsează prima linie pentru datele principale
             if (lines.length > 0) {
                 const mainLine = lines[0];
                 const [labelPart, bucatiPart] = mainLine.split(' | ');
                 
                 if (labelPart && bucatiPart) {
-                    // Parsează label-ul principal: SPECIA_TIP_NUME_CALITATE_DIMENSIUNIxDIMENSIUNIxDIMENSIUNI
                     const parts = labelPart.split('_');
                     
                     if (parts.length >= 4) {
-                        // Extrage componentele
                         const specia = parts[0];
                         const tip = parts[1];
                         const nume = parts[2];
                         const calitate = parts[3];
                         
-                        // Extrage dimensiunile (ultimul segment după ultimul _)
                         const dimensionPart = parts[parts.length - 1];
                         const dimensionMatch = dimensionPart.match(/(\d+)x(\d+)x(\d+)/);
                         
                         if (dimensionMatch) {
                             const [, lungime, latime, grosime] = dimensionMatch;
                             
-                            // Populează câmpurile principale
                             document.getElementById('specia').value = specia;
                             document.getElementById('tip').value = tip;
-                            updateNumeOptions(); // Actualizează opțiunile nume
+                            updateNumeOptions();
                             document.getElementById('nume').value = nume;
                             document.getElementById('calitate').value = calitate;
                             document.getElementById('lungime').value = lungime;
@@ -872,19 +827,16 @@
                 }
             }
             
-            // Procesează dimensiunile adiționale
             for (let i = 1; i < lines.length - 1; i++) {
                 const line = lines[i];
                 const [labelPart, bucatiPart] = line.split(' | ');
                 
                 if (labelPart && bucatiPart) {
-                    // Extrage dimensiunile din label
                     const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
                     
                     if (dimensionMatch) {
                         const [, lungime, latime, grosime] = dimensionMatch;
                         
-                        // Adaugă dimensiune adițională
                         if (additionalDimensions.length < 3) {
                             const id = Date.now() + i;
                             additionalDimensions.push({
@@ -899,7 +851,6 @@
                 }
             }
             
-            // Procesează locația (ultima linie)
             if (lines.length > 1) {
                 const lastLine = lines[lines.length - 1];
                 const locationMatch = lastLine.match(/([A-G])-(\d+)-(\d+)/);
@@ -912,10 +863,7 @@
                 }
             }
             
-            // Redessează lista de dimensiuni adiționale
             renderDimensionsList();
-            
-            // Generează automat previzualizarea
             setTimeout(generatePreview, 100);
         }
 
@@ -930,9 +878,7 @@
             }, 3000);
         }
 
-        // Simulare pentru testare - detectează QR din input text
         function simulateQRScan() {
-            // Exemplu de QR data pentru testare
             const testQRData = `R_DIM_C24_PL_100x50x20 | 467
 R_DIM_C24_PL_80x40x15 | 234
 R_DIM_C24_PL_60x30x10 | 156
@@ -942,27 +888,31 @@ A-5-2`;
             showNotification('QR test scanat cu succes!');
         }
 
-        // Pentru testare, adaugă un buton de test în consolă
-        console.log('Pentru a testa scanarea QR, rulează: simulateQRScan()');
-
-        // Închide scanner-ul cu ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 stopScanner();
             }
         });
 
-        // Inițializează aplicația
         document.addEventListener('DOMContentLoaded', function() {
             showNotification('Aplicația s-a încărcat cu succes!');
             
-            // Adaugă event listener pentru TIP select după încărcarea paginii
             const tipSelect = document.getElementById('tip');
             if (tipSelect) {
                 tipSelect.addEventListener('change', updateNumeOptions);
-                console.log('Event listener added to TIP select');
             }
         });
 
-        // Asigură-te că funcția este disponibilă global
         window.updateNumeOptions = updateNumeOptions;
+        window.generatePreview = generatePreview;
+        window.startScanner = startScanner;
+        window.addDimension = addDimension;
+        window.removeDimension = removeDimension;
+        window.updateDimension = updateDimension;
+        window.clearForm = clearForm;
+        window.stopScanner = stopScanner;
+        window.switchCamera = switchCamera;
+        window.simulateQRScan = simulateQRScan;
+    </script>
+</body>
+</html>
