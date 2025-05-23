@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicație Tipărire Etichete A4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        select, input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .dimensions-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .location-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .preview-container {
+            margin-top: 30px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            background: #fafafa;
+        }
+        
+        .label-preview {
+            background: white;
+            padding: 40px;
+            border: 1px solid #ddd;
+            position: relative;
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .label-content {
+            font-family: Arial, sans-serif;
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+        
+        .label-dimensions {
+            margin-top: 20px;
+            font-size: 36px;
+            line-height: 1.5;
+        }
+        
+        .qr-container {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            border: 2px solid #333;
+            padding: 10px;
+            background: white;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                display: none;
+            }
+            
+            .preview-container {
+                border: none;
+                padding: 0;
+                background: white;
+            }
+            
+            .label-preview {
+                border: none;
+                box-shadow: none;
+                margin: 0;
+                padding: 40px;
+            }
+        }
+        
+        .dimensions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .dimension-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .dimension-item input {
+            width: 80px;
+        }
+        
+        .btn-remove {
+            background: #ff4444;
+            color: white;
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+        
+        .btn-remove:hover {
+            background: #cc0000;
+        }
+        
+        .btn-add {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .btn-add:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aplicație Tipărire Etichete A4</h1>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="specia">Specia</label>
+                <select id="specia">
+                    <option value="">Selectează...</option>
+                    <option value="R">R</option>
+                    <option value="L">L</option>
+                    <option value="C">C</option>
+                    <option value="S">S</option>
+                    <option value="D">D</option>
+                    <option value="F">F</option>
+                    <option value="FR">FR</option>
+                    <option value="P">P</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="tip">Tip</label>
+                <select id="tip">
+                    <option value="">Selectează...</option>
+                    <option value="DIM">DIM</option>
+                    <option value="DIV">DIV</option>
+                    <option value="SF">SF</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="nume">Nume</label>
+                <select id="nume">
+                    <option value="">Selectează...</option>
+                    <option value="C24">C24</option>
+                    <option value="KVH_C24">KVH_C24</option>
+                    <option value="DUO_C24">DUO_C24</option>
+                    <option value="BSH_GL24h">BSH_GL24h</option>
+                    <option value="DK">DK</option>
+                    <option value="ARC">ARC</option>
+                    <option value="Lam_NF">Lam_NF</option>
+                    <option value="Lam_NFA">Lam_NFA</option>
+                    <option value="Lam_NFC">Lam_NFC</option>
+                    <option value="Lam_NFD">Lam_NFD</option>
+                    <option value="Lam_NFF">Lam_NFF</option>
+                    <option value="Lam_NFS">Lam_NFS</option>
+                    <option value="Lam_D">Lam_D</option>
+                    <option value="Lam_P">Lam_P</option>
+                    <option value="PL">PL</option>
+                    <option value="FRIZ_C24">FRIZ_C24</option>
+                    <option value="Lam_Duo">Lam_Duo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="calitate">Calitate</label>
+                <select id="calitate">
+                    <option value="">Selectează...</option>
+                    <option value="PL">PL</option>
+                    <option value="ST">ST</option>
+                    <option value="CT">CT</option>
+                    <option value="THF">THF</option>
+                    <option value="THW">THW</option>
+                    <option value="FSC">FSC</option>
+                    <option value="ARS">ARS</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Dimensiuni inițiale (L x l x G)</label>
+                <div class="dimensions-group">
+                    <input type="number" id="lungime" placeholder="Lungime">
+                    <input type="number" id="latime" placeholder="Lățime">
+                    <input type="number" id="grosime" placeholder="Grosime">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="bucati">Număr bucăți</label>
+                <input type="number" id="bucati" placeholder="Ex: 467">
+            </div>
+            
+            <div class="form-group">
+                <label>Locație</label>
+                <div class="location-group">
+                    <select id="perete">
+                        <option value="">Perete</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="G">G</option>
+                    </select>
+                    <select id="coloana">
+                        <option value="">Coloană</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                    </select>
+                    <select id="rand">
+                        <option value="">Rând</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Dimensiuni adiționale (opțional, max 3)</label>
+            <div id="dimensions-list" class="dimensions-list"></div>
+            <button class="btn-add" onclick="addDimension()">+ Adaugă dimensiune</button>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="generatePreview()">Generează Previzualizare</button>
+            <button class="btn-secondary" onclick="window.print()">Tipărește</button>
+        </div>
+        
+        <div class="preview-container" id="preview-container" style="display: none;">
+            <div class="label-preview" id="label-preview">
+                <div class="label-content" id="label-content"></div>
+                <div class="label-dimensions" id="label-dimensions"></div>
+                <div class="qr-container" id="qr-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let additionalDimensions = [];
+        
+        function addDimension() {
+            if (additionalDimensions.length >= 3) {
+                alert('Maxim 3 dimensiuni adiționale!');
+                return;
+            }
+            
+            const id = Date.now();
+            additionalDimensions.push({
+                id: id,
+                L: '',
+                l: '',
+                G: ''
+            });
+            
+            renderDimensionsList();
+        }
+        
+        function removeDimension(id) {
+            additionalDimensions = additionalDimensions.filter(d => d.id !== id);
+            renderDimensionsList();
+        }
+        
+        function updateDimension(id, field, value) {
+            const dim = additionalDimensions.find(d => d.id === id);
+            if (dim) {
+                dim[field] = value;
+            }
+        }
+        
+        function renderDimensionsList() {
+            const container = document.getElementById('dimensions-list');
+            container.innerHTML = '';
+            
+            additionalDimensions.forEach(dim => {
+                const item = document.createElement('div');
+                item.className = 'dimension-item';
+                item.innerHTML = `
+                    <input type="number" placeholder="L" value="${dim.L}" onchange="updateDimension(${dim.id}, 'L', this.value)">
+                    <span>x</span>
+                    <input type="number" placeholder="l" value="${dim.l}" onchange="updateDimension(${dim.id}, 'l', this.value)">
+                    <span>x</span>
+                    <input type="number" placeholder="G" value="${dim.G}" onchange="updateDimension(${dim.id}, 'G', this.value)">
+                    <button class="btn-remove" onclick="removeDimension(${dim.id})">Șterge</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        function generatePreview() {
+            const specia = document.getElementById('specia').value;
+            const tip = document.getElementById('tip').value;
+            const nume = document.getElementById('nume').value;
+            const calitate = document.getElementById('calitate').value;
+            const lungime = document.getElementById('lungime').value;
+            const latime = document.getElementById('latime').value;
+            const grosime = document.getElementById('grosime').value;
+            const bucati = document.getElementById('bucati').value;
+            const perete = document.getElementById('perete').value;
+            const coloana = document.getElementById('coloana').value;
+            const rand = document.getElementById('rand').value;
+            
+            if (!specia || !tip || !nume || !calitate || !lungime || !latime || !grosime || !bucati) {
+                alert('Vă rugăm completați toate câmpurile obligatorii!');
+                return;
+            }
+            
+            // Generate main label
+            const mainLabel = `${specia}_${tip}_${nume}_${calitate}`;
+            const mainDimension = `${lungime}x${latime}x${grosime}`;
+            
+            // Generate label content
+            const labelContent = document.getElementById('label-content');
+            labelContent.textContent = mainLabel;
+            
+            // Generate dimensions content
+            const dimensionsContent = document.getElementById('label-dimensions');
+            let dimensionsHTML = `${mainDimension}`;
+            
+            // Add bucket count
+            if (bucati) {
+                dimensionsHTML += `<br>${bucati} BUC.`;
+            }
+            
+            // Add additional dimensions
+            additionalDimensions.forEach(dim => {
+                if (dim.L && dim.l && dim.G) {
+                    dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G}`;
+                }
+            });
+            
+            dimensionsContent.innerHTML = dimensionsHTML;
+            
+            // Generate QR code
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.innerHTML = '';
+            
+            let qrData = `${mainLabel}_${mainDimension}`;
+            if (bucati) qrData += `_${bucati}BUC`;
+            
+            // Add additional dimensions to QR
+            additionalDimensions.forEach(dim => {
+                if (dim.L && dim.l && dim.G) {
+                    qrData += `_${dim.L}x${dim.l}x${dim.G}`;
+                }
+            });
+            
+            // Add location to QR
+            if (perete && coloana && rand) {
+                qrData += `_${perete}-${coloana}-${rand}`;
+            }
+            
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Add "COD QR" text
+            const qrLabel = document.createElement('div');
+            qrLabel.style.textAlign = 'center';
+            qrLabel.style.marginTop = '10px';
+            qrLabel.style.fontSize = '24px';
+            qrLabel.style.fontWeight = 'bold';
+            qrLabel.textContent = 'COD QR';
+            qrContainer.appendChild(qrLabel);
+            
+            // Show preview
+            document.getElementById('preview-container').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
