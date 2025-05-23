@@ -17,14 +17,28 @@
     visibility: visible !important;
   }
 
-  /* poziţionează previzualizarea în colţul paginii */
+  /* poziţionează previzualizarea în colţul paginii și încadrează în pagină complet */
   #preview-container {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;
     margin: 0;
     padding: 0;
+    page-break-after: avoid;
+    page-break-before: avoid;
+    page-break-inside: avoid;
+  }
+
+  .label-preview {
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box;
+    page-break-after: avoid;
+    page-break-before: avoid;
+    page-break-inside: avoid;
   }
 
   .dimension-item input {
