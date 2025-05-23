@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplicație Tipărire Etichete A4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         @page {
             size: A4 landscape;
@@ -300,6 +301,46 @@
             align-items: center;
             justify-content: center;
             color: #666;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanner-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid #BD3033;
+            border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 3px solid #BD3033;
+            border-radius: 10px;
+            animation: scannerPulse 2s infinite;
+        }
+
+        @keyframes scannerPulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         .scanner-controls {
@@ -710,62 +751,112 @@
             videoElement.innerHTML = '<div class="loading-spinner"></div><div class="status-message">Se încarcă camera...</div>';
             
             try {
+                // Solicită acces la cameră cu rezoluție optimă pentru QR
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: currentCamera,
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 },
+                        frameRate: { ideal: 30 }
                     }
                 });
                 
                 const video = document.createElement('video');
                 video.srcObject = mediaStream;
+                video.setAttribute('playsinline', true); // Pentru iOS
                 video.play();
-                video.style.width = '100%';
-                video.style.height = '100%';
-                video.style.objectFit = 'cover';
                 
                 videoElement.innerHTML = '';
                 videoElement.appendChild(video);
                 
-                document.getElementById('scanner-status').textContent = 'Scanare activă - poziționează QR-ul în centrul camerei';
+                // Adaugă overlay pentru ghidarea utilizatorului
+                const overlay = document.createElement('div');
+                overlay.className = 'scanner-overlay';
+                videoElement.appendChild(overlay);
                 
-                startQRDetection(video);
+                document.getElementById('scanner-status').textContent = 'Poziționează QR-ul în pătratul roșu';
+                
+                // Așteaptă ca video-ul să fie gata
+                video.addEventListener('loadedmetadata', () => {
+                    startQRDetection(video);
+                });
                 
             } catch (error) {
-                videoElement.innerHTML = '<div class="status-message">Eroare: Nu s-a putut accesa camera</div>';
-                showNotification('Nu s-a putut accesa camera!', 'error');
+                console.error('Eroare camera:', error);
+                let errorMessage = 'Nu s-a putut accesa camera!';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = 'Acces la cameră refuzat! Te rog să permiți accesul și să reîncerci.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = 'Nu s-a găsit nicio cameră pe dispozitiv!';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage = 'Camera nu este suportată de browser!';
+                }
+                
+                videoElement.innerHTML = `<div class="status-message">${errorMessage}</div>`;
+                showNotification(errorMessage, 'error');
             }
         }
 
         function startQRDetection(video) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
+            let isScanning = true;
             
-            scanInterval = setInterval(() => {
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0);
-                    
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = detectQR(imageData);
-                    
-                    if (code) {
-                        try {
-                            populateFormFromQR(code);
-                            stopScanner();
-                            showNotification('QR scanat cu succes!');
-                        } catch (e) {
-                            showNotification('Format QR nerecunoscut - se continuă scanarea...', 'error');
-                        }
+            function scanFrame() {
+                if (!isScanning || !video.videoWidth || !video.videoHeight) {
+                    if (isScanning) {
+                        requestAnimationFrame(scanFrame);
                     }
+                    return;
                 }
-            }, 100);
-        }
-
-        function detectQR(imageData) {
-            return null;
+                
+                // Setează dimensiunile canvas-ului
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Desenează frame-ul video pe canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Obține datele imaginii
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Încearcă să detecteze QR code
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert"
+                });
+                
+                if (code) {
+                    isScanning = false;
+                    
+                    // Feedback vizual de succes
+                    const overlay = document.querySelector('.scanner-overlay');
+                    if (overlay) {
+                        overlay.style.borderColor = '#4CAF50';
+                        overlay.style.boxShadow = '0 0 0 9999px rgba(76, 175, 80, 0.3)';
+                    }
+                    
+                    try {
+                        populateFormFromQR(code.data);
+                        stopScanner();
+                        showNotification('QR scanat cu succes! 🎉');
+                    } catch (e) {
+                        console.error('Eroare parsare QR:', e);
+                        showNotification('Datele QR nu pot fi procesate. Format nerecunoscut.', 'error');
+                        isScanning = true; // Continuă scanarea
+                        requestAnimationFrame(scanFrame);
+                    }
+                } else {
+                    // Continuă scanarea
+                    requestAnimationFrame(scanFrame);
+                }
+            }
+            
+            // Pornește scanarea
+            scanFrame();
+            
+            // Salvează referința pentru stop
+            scanInterval = () => { isScanning = false; };
         }
 
         function stopScanner() {
@@ -775,7 +866,11 @@
             }
             
             if (scanInterval) {
-                clearInterval(scanInterval);
+                if (typeof scanInterval === 'function') {
+                    scanInterval(); // Oprește loop-ul de scanare
+                } else {
+                    clearInterval(scanInterval);
+                }
                 scanInterval = null;
             }
             
@@ -787,12 +882,19 @@
                 currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
                 stopScanner();
                 setTimeout(startScanner, 100);
+                
+                const switchButton = document.getElementById('switch-camera');
+                switchButton.textContent = currentCamera === 'environment' ? 'Camera Față' : 'Camera Spate';
             }
         }
 
         function populateFormFromQR(qrData) {
             const lines = qrData.split('\n');
             clearForm();
+            
+            // Debug pentru a vedea ce primim
+            console.log('QR Data primit:', qrData);
+            console.log('Linii:', lines);
             
             if (lines.length > 0) {
                 const mainLine = lines[0];
@@ -824,6 +926,10 @@
                             document.getElementById('bucati').value = bucatiPart;
                         }
                     }
+                } else {
+                    // Încearcă să parseze QR-uri în alte formate
+                    showNotification('Format QR detectat, dar structura nu este recunoscută. Se afișează datele brute.', 'error');
+                    alert('Date QR detectate:\n' + qrData);
                 }
             }
             
