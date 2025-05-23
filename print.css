@@ -6,26 +6,26 @@
   margin: 0;
 }
 @media print {
-  /* întinde body-ul exact ca pagina A4 landscape */
-  html, body {
-    width: 297mm;
-    height: 210mm;
+  /* ascunde tot */
+  body * {
+    visibility: hidden !important;
+  }
+  /* arată doar containerul de previzualizare și conținutul lui */
+  #preview-container, 
+  #preview-container * {
+    visibility: visible !important;
+  }
+  /* poziţionează previzualizarea în colţul paginii */
+  #preview-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     margin: 0;
     padding: 0;
   }
-
-  /* forțează containerul de preview să ocupe tot spațiul */
-  .preview-container {
-    width: 297mm !important;
-    height: 210mm !important;
-  }
-
-  /* iar eticheta se întinde 100% în container */
-  .label-preview {
-    width: 100% !important;
-    height: 100% !important;
-    padding: 0 !important; /* sau păstrează 40px, după cum vrei tu */
-  }
+  /* ascunde marginile implicite de pagină */
+  @page { margin: 0; }
 }
 
 
