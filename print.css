@@ -1,0 +1,31 @@
+/* print.css */
+
+@page {
+  size: A4 landscape;     /* forţează A4 orizontal */
+  margin: 0;              /* fără margini implicite */
+}
+
+@media print {
+  /* 1) Ascunde toată interfața de editare */
+  .container > :not(.preview-container) {
+    display: none !important;
+  }
+
+  /* 2) Forţează preview-ul să ocupe tot ecranul paginii */
+  .preview-container {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* 3) Elimină umbre, borduri: curat și profesional */
+  .label-preview {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 40px !important; /* păstrezi padding-ul de etichetă */
+    page-break-inside: avoid;
+  }
+}
