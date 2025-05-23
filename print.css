@@ -1,20 +1,22 @@
 /* print.css */
 
-/* 1. Forțează formatul paginii la A4 landscape, fără margini implicite */
 @page {
   size: A4 landscape;
   margin: 0;
 }
+
 @media print {
   /* ascunde tot */
   body * {
     visibility: hidden !important;
   }
+
   /* arată doar containerul de previzualizare și conținutul lui */
   #preview-container, 
   #preview-container * {
     visibility: visible !important;
   }
+
   /* poziţionează previzualizarea în colţul paginii */
   #preview-container {
     position: absolute;
@@ -24,8 +26,22 @@
     margin: 0;
     padding: 0;
   }
-  /* ascunde marginile implicite de pagină */
-  @page { margin: 0; }
+
+  .dimension-item input {
+    padding: 16px !important;
+    font-size: 18px !important;
+    width: 120px !important;
+  }
+
+  .location-group select {
+    padding: 6px !important;
+    font-size: 12px !important;
+    width: 100% !important;
+    margin: 0 2px !important;
+  }
+
+  .location-group {
+    gap: 4px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
 }
-
-
