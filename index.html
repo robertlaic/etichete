@@ -258,7 +258,7 @@
             
             <div class="form-group">
                 <label for="tip">Tip</label>
-                <select id="tip">
+                <select id="tip" onchange="updateNumeOptions()">
                     <option value="">Selectează...</option>
                     <option value="DIM">DIM</option>
                     <option value="DIV">DIV</option>
@@ -387,6 +387,50 @@
     <script>
         let additionalDimensions = [];
         
+        function updateNumeOptions() {
+            const tipSelect = document.getElementById('tip');
+            const numeSelect = document.getElementById('nume');
+            const selectedTip = tipSelect.value;
+            
+            // Store current selection
+            const currentSelection = numeSelect.value;
+            
+            // Clear all options
+            numeSelect.innerHTML = '<option value="">Selectează...</option>';
+            
+            if (selectedTip === 'DIM' || selectedTip === 'DIV') {
+                // For DIM and DIV, show only C24
+                numeSelect.innerHTML += '<option value="C24">C24</option>';
+            } else if (selectedTip === 'SF') {
+                // For SF, show all options except C24
+                const sfOptions = [
+                    'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC', 
+                    'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF', 
+                    'Lam_NFS', 'Lam_D', 'Lam_P', 'PL', 'FRIZ_C24', 'Lam_Duo'
+                ];
+                
+                sfOptions.forEach(option => {
+                    numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+            } else {
+                // If no tip selected, show all options
+                const allOptions = [
+                    'C24', 'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC',
+                    'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF',
+                    'Lam_NFS', 'Lam_D', 'Lam_P', 'PL', 'FRIZ_C24', 'Lam_Duo'
+                ];
+                
+                allOptions.forEach(option => {
+                    numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+            }
+            
+            // Try to restore previous selection if it's still valid
+            if (currentSelection && numeSelect.querySelector(`option[value="${currentSelection}"]`)) {
+                numeSelect.value = currentSelection;
+            }
+        }
+        
         function addDimension() {
             if (additionalDimensions.length >= 3) {
                 alert('Maxim 3 dimensiuni adiționale!');
@@ -510,10 +554,6 @@
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
-            
-            // Remove "COD QR" text - QR code only
-            
-            // Remove "COD QR" text - QR code only
             
             // Show preview
             document.getElementById('preview-container').style.display = 'block';
