@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplicație Tipărire Etichete A4 - Depozit</title>
+    <title>Aplicație Tipărire Etichete A4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @page {
             size: A4 landscape;
@@ -21,309 +22,279 @@
             }
 
             #preview-container {
-                position: absolute;
+                position: fixed;
                 top: 0;
                 left: 0;
-                width: 297mm;
-                height: 210mm;
-                overflow: hidden;
-                margin: 0;
-                padding: 0;
-                page-break-after: avoid;
-                page-break-before: avoid;
-                page-break-inside: avoid;
+                width: 100vw;
+                height: 100vh;
                 background: white;
                 border: none;
                 border-radius: 0;
                 box-shadow: none;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
             }
 
             .label-preview {
                 width: 100% !important;
                 height: 100% !important;
-                box-sizing: border-box;
-                page-break-after: avoid;
-                page-break-before: avoid;
-                page-break-inside: avoid;
                 border: none !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
+                margin: 0 !important;
+                page-break-after: avoid;
+                page-break-before: avoid;
+                page-break-inside: avoid;
             }
         }
 
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
-            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%); 
-            min-height: 100vh; 
-            padding: 20px; 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
         
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: rgba(255, 255, 255, 0.95); 
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); 
-            padding: 30px; 
-            backdrop-filter: blur(10px); 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            backdrop-filter: blur(10px);
         }
         
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
         }
         
-        .header h1 { 
-            color: #BD3033; 
-            font-size: 2.5em; 
-            margin-bottom: 10px; 
-            font-weight: bold;
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
         
-        .header p { 
-            color: #666; 
-            font-size: 1.1em; 
-        }
-
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px; 
+        .form-group {
+            display: flex;
+            flex-direction: column;
         }
         
-        .form-group { 
-            display: flex; 
-            flex-direction: column; 
+        label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        label { 
-            font-weight: 600; 
-            color: #555; 
-            margin-bottom: 8px; 
-            font-size: 0.9em; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
+        select, input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
         }
         
-        select, input { 
-            padding: 12px; 
-            border: 2px solid #e0e0e0; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            transition: all 0.3s ease; 
-            background: white; 
+        select:focus, input:focus {
+            outline: none;
+            border-color: #BD3033;
+            box-shadow: 0 0 0 3px rgba(189, 48, 51, 0.1);
         }
         
-        select:focus, input:focus { 
-            outline: none; 
-            border-color: #BD3033; 
-            box-shadow: 0 0 0 3px rgba(189, 48, 51, 0.1); 
+        .dimensions-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
         
-        .dimensions-group { 
-            display: flex; 
-            gap: 10px; 
+        .location-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
         
-        .dimensions-group input { 
-            flex: 1; 
-            padding: 20px; 
-            font-size: 20px; 
-            font-weight: bold; 
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
         
-        .location-group { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 3px; 
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
-        .location-group select { 
-            padding: 4px; 
-            font-size: 11px; 
-        }
-        
-        .button-group { 
-            display: flex; 
-            gap: 15px; 
-            margin-top: 30px; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-        }
-        
-        button { 
-            padding: 12px 30px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: all 0.3s ease; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        
-        .btn-primary { 
-            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%); 
-            color: white; 
+        .btn-primary {
+            background: linear-gradient(135deg, #BD3033 0%, #8B1A1B 100%);
+            color: white;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(189, 48, 51, 0.3);
+            box-shadow: 0 10px 20px rgba(189, 48, 51, 0.3);
         }
         
-        .btn-secondary { 
-            background: #f5f5f5; 
-            color: #333; 
-            border: 2px solid #e0e0e0; 
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
         }
         
         .btn-secondary:hover {
-            background: #e8e8e8;
-            transform: translateY(-2px);
+            background: #e0e0e0;
         }
-        
-        .btn-scanner { 
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; 
+
+        .btn-scanner {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
         }
         
         .btn-scanner:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
         }
         
-        .preview-container { 
-            margin-top: 30px; 
-            border: 2px dashed #e0e0e0; 
-            border-radius: 10px; 
-            padding: 20px; 
-            min-height: 200px; 
-            background: #fafafa; 
+        .preview-container {
+            margin-top: 30px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            background: #fafafa;
         }
         
-        .label-preview { 
-            background: white; 
-            padding: 40px; 
-            border: 1px solid #ddd; 
-            position: relative; 
-            width: 297mm; 
-            height: 210mm; 
-            margin: 0 auto; 
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
-        }
-        
-        .label-content { 
-            font-family: Arial, sans-serif; 
-            font-size: 96px; 
-            font-weight: bold; 
-            line-height: 1.3; 
-        }
-        
-        .label-dimensions { 
-            margin-top: 40px; 
-            font-size: 72px; 
-            line-height: 1.5; 
-            white-space: pre-line;
-        }
-        
-        .qr-container { 
-            position: absolute; 
-            bottom: 40px; 
-            right: 40px; 
-            border: 2px solid #333; 
-            padding: 10px; 
+        .label-preview {
             background: white;
-            width: 150px;
-            height: 150px;
+            padding: 40px;
+            border: 1px solid #ddd;
+            position: relative;
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .label-content {
+            font-family: Arial, sans-serif;
+            font-size: 96px;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+        
+        .label-dimensions {
+            margin-top: 40px;
+            font-size: 72px;
+            line-height: 1.5;
+        }
+        
+        .qr-container {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            border: 2px solid #333;
+            padding: 10px;
+            background: white;
+        }
+        
+        .dimensions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .dimension-item {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
         }
         
-        .dimensions-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            margin-top: 20px; 
+        .dimension-item input {
+            width: 80px;
         }
         
-        .dimension-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            padding: 15px; 
-            background: #f5f5f5; 
-            border-radius: 8px; 
-        }
-        
-        .dimension-item input { 
-            width: 150px; 
-            padding: 18px; 
-            font-size: 18px; 
-            font-weight: bold; 
-        }
-        
-        .btn-remove { 
-            background: #ff4444; 
-            color: white; 
-            padding: 8px 20px; 
-            font-size: 14px; 
-            border-radius: 6px; 
+        .btn-remove {
+            background: #ff4444;
+            color: white;
+            padding: 5px 15px;
+            font-size: 14px;
         }
         
         .btn-remove:hover {
             background: #cc0000;
         }
         
-        .btn-add { 
-            background: #4CAF50; 
-            color: white; 
-            padding: 12px 25px; 
-            font-size: 16px; 
-            margin-top: 15px; 
-            border-radius: 8px; 
+        .btn-add {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 20px;
+            font-size: 14px;
+            margin-top: 10px;
         }
         
         .btn-add:hover {
             background: #45a049;
         }
 
-        .scanner-container { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0, 0, 0, 0.9); 
-            z-index: 1000; 
+        /* Scanner Styles */
+        .scanner-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
         }
         
-        .scanner-content { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: white; 
-            border-radius: 15px; 
-            padding: 20px; 
-            max-width: 500px; 
-            width: 90%; 
+        .scanner-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
         }
         
-        .scanner-video { 
-            width: 100%; 
-            height: 300px; 
-            border-radius: 10px; 
+        .scanner-video {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
             background: #f0f0f0;
             display: flex;
             align-items: center;
@@ -331,34 +302,34 @@
             color: #666;
         }
         
-        .scanner-controls { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-top: 20px; 
+        .scanner-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
         }
         
-        .scanner-status { 
-            text-align: center; 
-            margin: 15px 0; 
-            font-weight: bold; 
-            color: #BD3033; 
+        .scanner-status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            color: #BD3033;
         }
 
-        .notification { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: #4CAF50; 
-            color: white; 
-            padding: 15px 25px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            z-index: 1001; 
-            display: none; 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1001;
+            display: none;
         }
         
-        .notification.error { 
-            background: #ff4444; 
+        .notification.error {
+            background: #ff4444;
         }
 
         .loading-spinner {
@@ -386,95 +357,145 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🏭 Etichetare Depozit</h1>
-            <p>Generare și tipărire etichete pentru produse</p>
-        </div>
-
+        <h1>Aplicație Tipărire Etichete A4</h1>
+        
         <div class="form-grid">
             <div class="form-group">
-                <label>Denumire Produs</label>
-                <input type="text" id="product-name" placeholder="Introduceți denumirea produsului">
-            </div>
-
-            <div class="form-group">
-                <label>Cod Produs</label>
-                <input type="text" id="product-code" placeholder="Cod unic produs">
-            </div>
-
-            <div class="form-group">
-                <label>Categorie</label>
-                <select id="category">
-                    <option value="">Selectați categoria</option>
-                    <option value="electronice">Electronice</option>
-                    <option value="textile">Textile</option>
-                    <option value="alimentare">Alimentare</option>
-                    <option value="mobila">Mobilă</option>
-                    <option value="carti">Cărți</option>
-                    <option value="jucarii">Jucării</option>
-                    <option value="altele">Altele</option>
+                <label for="specia">Specia</label>
+                <select id="specia">
+                    <option value="">Selectează...</option>
+                    <option value="R">R</option>
+                    <option value="L">L</option>
+                    <option value="C">C</option>
+                    <option value="S">S</option>
+                    <option value="D">D</option>
+                    <option value="F">F</option>
+                    <option value="FR">FR</option>
+                    <option value="P">P</option>
                 </select>
             </div>
-
+            
             <div class="form-group">
-                <label>Locație în Depozit</label>
+                <label for="tip">Tip</label>
+                <select id="tip" onchange="updateNumeOptions()">
+                    <option value="">Selectează...</option>
+                    <option value="DIM">DIM</option>
+                    <option value="DIV">DIV</option>
+                    <option value="SF">SF</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="nume">Nume</label>
+                <select id="nume">
+                    <option value="">Selectează...</option>
+                    <option value="C24">C24</option>
+                    <option value="KVH_C24">KVH_C24</option>
+                    <option value="DUO_C24">DUO_C24</option>
+                    <option value="BSH_GL24h">BSH_GL24h</option>
+                    <option value="DK">DK</option>
+                    <option value="ARC">ARC</option>
+                    <option value="Lam_NF">Lam_NF</option>
+                    <option value="Lam_NFA">Lam_NFA</option>
+                    <option value="Lam_NFC">Lam_NFC</option>
+                    <option value="Lam_NFD">Lam_NFD</option>
+                    <option value="Lam_NFF">Lam_NFF</option>
+                    <option value="Lam_NFS">Lam_NFS</option>
+                    <option value="Lam_D">Lam_D</option>
+                    <option value="Lam_P">Lam_P</option>
+                    <option value="PL">PL</option>
+                    <option value="FRIZ_C24">FRIZ_C24</option>
+                    <option value="Lam_Duo">Lam_Duo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="calitate">Calitate</label>
+                <select id="calitate">
+                    <option value="">Selectează...</option>
+                    <option value="PL">PL</option>
+                    <option value="ST">ST</option>
+                    <option value="CT">CT</option>
+                    <option value="THF">THF</option>
+                    <option value="THW">THW</option>
+                    <option value="FSC">FSC</option>
+                    <option value="ARS">ARS</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-grid" style="margin-top: 20px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Dimensiuni inițiale (L x l x G)</label>
+                <div class="dimensions-group">
+                    <input type="number" id="lungime" placeholder="Lungime">
+                    <input type="number" id="latime" placeholder="Lățime">
+                    <input type="number" id="grosime" placeholder="Grosime">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="bucati">Număr bucăți</label>
+                <input type="number" id="bucati" placeholder="Ex: 467">
+            </div>
+        </div>
+        
+        <div class="form-grid" style="margin-top: 20px;">
+            <div class="form-group">
+                <label>Locație</label>
                 <div class="location-group">
-                    <select id="corridor">
-                        <option value="">Culoar</option>
+                    <select id="perete">
+                        <option value="">Perete</option>
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="C">C</option>
                         <option value="D">D</option>
                         <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="G">G</option>
                     </select>
-                    <select id="rack">
-                        <option value="">Raft</option>
+                    <select id="coloana">
+                        <option value="">Coloană</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
                         <option value="4">4</option>
                         <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
                     </select>
-                    <select id="shelf">
-                        <option value="">Etaj</option>
+                    <select id="rand">
+                        <option value="">Rând</option>
+                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
                         <option value="4">4</option>
                     </select>
-                    <select id="position">
-                        <option value="">Poz</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                    </select>
                 </div>
             </div>
         </div>
-
+        
         <div class="form-group">
-            <label>Dimensiuni Principale (L x l x Î - cm)</label>
-            <div class="dimensions-group">
-                <input type="number" id="main-length" placeholder="Lungime">
-                <input type="number" id="main-width" placeholder="Lățime">
-                <input type="number" id="main-height" placeholder="Înălțime">
-            </div>
+            <label>Dimensiuni adiționale (opțional, max 3)</label>
+            <div id="dimensions-list" class="dimensions-list"></div>
+            <button class="btn-add" onclick="addDimension()">+ Adaugă dimensiune</button>
         </div>
-
-        <div class="form-group">
-            <label>Dimensiuni Adiționale</label>
-            <div class="dimensions-list" id="dimensions-list"></div>
-            <button type="button" class="btn-add" onclick="addDimension()">+ Adaugă Dimensiune</button>
-        </div>
-
+        
         <div class="button-group">
             <button class="btn-scanner" onclick="startScanner()">📱 Scanează QR</button>
-            <button class="btn-primary" onclick="generatePreview()">👁️ Previzualizare</button>
+            <button class="btn-primary" onclick="generatePreview()">Generează Previzualizare</button>
+            <button class="btn-secondary" onclick="window.print()">Tipărește</button>
             <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge Tot</button>
-            <button class="btn-primary" onclick="printLabel()">🖨️ Tipărește</button>
         </div>
-
+        
         <div class="preview-container" id="preview-container" style="display: none;">
             <div class="label-preview" id="label-preview">
                 <div class="label-content" id="label-content"></div>
@@ -501,157 +522,218 @@
 
     <!-- Notification -->
     <div class="notification" id="notification"></div>
-
-    <!-- Scripts -->
-    <script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+    
     <script>
-        // QR Code Generator Implementation
-        function createQR(text, size = 256) {
-            const qr = qrcode(0, 'M');
-            qr.addData(text);
-            qr.make();
-            
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const modules = qr.getModuleCount();
-            const cellSize = size / modules;
-            
-            canvas.width = size;
-            canvas.height = size;
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
-            
-            ctx.fillStyle = '#000000';
-            for (let row = 0; row < modules; row++) {
-                for (let col = 0; col < modules; col++) {
-                    if (qr.isDark(row, col)) {
-                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-                    }
-                }
-            }
-            
-            return canvas;
-        }
-
+        let additionalDimensions = [];
         let mediaStream = null;
         let currentCamera = 'environment';
         let scanInterval = null;
-
-        function addDimension() {
-            const container = document.getElementById('dimensions-list');
-            if (container.children.length >= 3) {
-                showNotification('Maximum 3 dimensiuni adiționale!', 'error');
+        
+        // Funcția pentru actualizarea opțiunilor NUME bazate pe TIP
+        function updateNumeOptions() {
+            console.log('updateNumeOptions called'); // Debug
+            const tipSelect = document.getElementById('tip');
+            const numeSelect = document.getElementById('nume');
+            
+            if (!tipSelect || !numeSelect) {
+                console.error('Elements not found!');
                 return;
             }
             
-            const wrapper = document.createElement('div');
-            wrapper.className = 'dimension-item';
-            wrapper.innerHTML = `
-                <input type="number" placeholder="Lungime (cm)">
-                <input type="number" placeholder="Lățime (cm)">
-                <input type="number" placeholder="Înălțime (cm)">
-                <button class="btn-remove" onclick="removeDimension(this)">🗑️ Șterge</button>
-            `;
-            container.appendChild(wrapper);
-            showNotification('Dimensiune adăugată!');
-        }
-
-        function removeDimension(button) {
-            button.parentElement.remove();
-            showNotification('Dimensiune ștearsă!');
-        }
-
-        function generatePreview() {
-            const productName = document.getElementById('product-name').value || 'Produs Necunoscut';
-            const productCode = document.getElementById('product-code').value || 'N/A';
-            const category = document.getElementById('category').value || 'N/A';
+            const selectedTip = tipSelect.value;
+            console.log('Selected TIP:', selectedTip); // Debug
             
-            const corridor = document.getElementById('corridor').value;
-            const rack = document.getElementById('rack').value;
-            const shelf = document.getElementById('shelf').value;
-            const position = document.getElementById('position').value;
-            const location = `${corridor}${rack}${shelf}${position}` || 'N/A';
-
-            const mainLength = document.getElementById('main-length').value;
-            const mainWidth = document.getElementById('main-width').value;
-            const mainHeight = document.getElementById('main-height').value;
-
-            let dimensionsText = '';
-            if (mainLength && mainWidth && mainHeight) {
-                dimensionsText = `${mainLength} × ${mainWidth} × ${mainHeight} cm\n`;
+            // Store current selection
+            const currentSelection = numeSelect.value;
+            
+            // Clear all options
+            numeSelect.innerHTML = '<option value="">Selectează...</option>';
+            
+            if (selectedTip === 'DIM' || selectedTip === 'DIV') {
+                // Pentru DIM și DIV, arată doar C24
+                numeSelect.innerHTML += '<option value="C24">C24</option>';
+                console.log('Added only C24 for DIM/DIV');
+            } else if (selectedTip === 'SF') {
+                // Pentru SF, arată toate opțiunile EXCEPTÂND C24
+                const sfOptions = [
+                    'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC', 
+                    'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF', 
+                    'Lam_NFS', 'Lam_D', 'Lam_P', 'PL', 'FRIZ_C24', 'Lam_Duo'
+                ];
+                
+                sfOptions.forEach(option => {
+                    numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+                console.log('Added SF options (no C24)');
+            } else {
+                // Dacă niciun tip nu este selectat, arată toate opțiunile
+                const allOptions = [
+                    'C24', 'KVH_C24', 'DUO_C24', 'BSH_GL24h', 'DK', 'ARC',
+                    'Lam_NF', 'Lam_NFA', 'Lam_NFC', 'Lam_NFD', 'Lam_NFF',
+                    'Lam_NFS', 'Lam_D', 'Lam_P', 'PL', 'FRIZ_C24', 'Lam_Duo'
+                ];
+                
+                allOptions.forEach(option => {
+                    numeSelect.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+                console.log('Added all options');
             }
-
-            const additionalDimensions = document.querySelectorAll('.dimension-item');
-            additionalDimensions.forEach(item => {
-                const inputs = item.querySelectorAll('input');
-                if (inputs[0].value && inputs[1].value && inputs[2].value) {
-                    dimensionsText += `${inputs[0].value} × ${inputs[1].value} × ${inputs[2].value} cm\n`;
+            
+            // Încearcă să restaureze selecția anterioară dacă este încă validă
+            if (currentSelection && numeSelect.querySelector(`option[value="${currentSelection}"]`)) {
+                numeSelect.value = currentSelection;
+            }
+        }
+        
+        
+        function addDimension() {
+            if (additionalDimensions.length >= 3) {
+                showNotification('Maxim 3 dimensiuni adiționale!', 'error');
+                return;
+            }
+            
+            const id = Date.now();
+            additionalDimensions.push({
+                id: id,
+                L: '',
+                l: '',
+                G: '',
+                bucati: ''
+            });
+            
+            renderDimensionsList();
+        }
+        
+        function removeDimension(id) {
+            additionalDimensions = additionalDimensions.filter(d => d.id !== id);
+            renderDimensionsList();
+        }
+        
+        function updateDimension(id, field, value) {
+            const dim = additionalDimensions.find(d => d.id === id);
+            if (dim) {
+                dim[field] = value;
+            }
+        }
+        
+        function renderDimensionsList() {
+            const container = document.getElementById('dimensions-list');
+            container.innerHTML = '';
+            
+            additionalDimensions.forEach(dim => {
+                const item = document.createElement('div');
+                item.className = 'dimension-item';
+                item.innerHTML = `
+                    <input type="number" placeholder="L" value="${dim.L}" onchange="updateDimension(${dim.id}, 'L', this.value)">
+                    <span>x</span>
+                    <input type="number" placeholder="l" value="${dim.l}" onchange="updateDimension(${dim.id}, 'l', this.value)">
+                    <span>x</span>
+                    <input type="number" placeholder="G" value="${dim.G}" onchange="updateDimension(${dim.id}, 'G', this.value)">
+                    <span style="margin: 0 10px;">-</span>
+                    <input type="number" placeholder="Bucăți" value="${dim.bucati}" onchange="updateDimension(${dim.id}, 'bucati', this.value)" style="width: 100px;">
+                    <button class="btn-remove" onclick="removeDimension(${dim.id})">Șterge</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        function generatePreview() {
+            const specia = document.getElementById('specia').value;
+            const tip = document.getElementById('tip').value;
+            const nume = document.getElementById('nume').value;
+            const calitate = document.getElementById('calitate').value;
+            const lungime = document.getElementById('lungime').value;
+            const latime = document.getElementById('latime').value;
+            const grosime = document.getElementById('grosime').value;
+            const bucati = document.getElementById('bucati').value;
+            const perete = document.getElementById('perete').value;
+            const coloana = document.getElementById('coloana').value;
+            const rand = document.getElementById('rand').value;
+            
+            if (!specia || !tip || !nume || !calitate || !lungime || !latime || !grosime || !bucati) {
+                showNotification('Vă rugăm completați toate câmpurile obligatorii!', 'error');
+                return;
+            }
+            
+            // Generate main label
+            const mainLabel = `${specia}_${tip}_${nume}_${calitate}`;
+            const mainDimension = `${lungime}x${latime}x${grosime}`;
+            
+            // Generate label content - only the main code
+            const labelContent = document.getElementById('label-content');
+            labelContent.textContent = mainLabel;
+            
+            // Generate dimensions content with proper format
+            const dimensionsContent = document.getElementById('label-dimensions');
+            let dimensionsHTML = `${mainDimension} - ${bucati} BUC.`;
+            
+            // Add additional dimensions
+            additionalDimensions.forEach(dim => {
+                if (dim.L && dim.l && dim.G && dim.bucati) {
+                    dimensionsHTML += `<br>${dim.L}x${dim.l}x${dim.G} - ${dim.bucati} BUC.`;
                 }
             });
-
-            document.getElementById('label-content').innerHTML = `
-                <div style="font-size: 96px; font-weight: bold; margin-bottom: 20px;">${productName}</div>
-                <div style="font-size: 48px; color: #666;">Cod: ${productCode}</div>
-                <div style="font-size: 36px; color: #666; margin-top: 10px;">Categorie: ${category}</div>
-                <div style="font-size: 36px; color: #666; margin-top: 10px;">Locație: ${location}</div>
-            `;
             
-            document.getElementById('label-dimensions').textContent = dimensionsText;
-
-            const qrData = JSON.stringify({
-                name: productName,
-                code: productCode,
-                category: category,
-                location: location,
-                dimensions: dimensionsText.trim(),
-                corridor: corridor,
-                rack: rack,
-                shelf: shelf,
-                position: position,
-                mainLength: mainLength,
-                mainWidth: mainWidth,
-                mainHeight: mainHeight
-            });
-
+            dimensionsContent.innerHTML = dimensionsHTML;
+            
+            // Generate QR code
             const qrContainer = document.getElementById('qr-container');
             qrContainer.innerHTML = '';
             
-            try {
-                const qrCanvas = createQR(qrData, 128);
-                qrContainer.appendChild(qrCanvas);
-            } catch (error) {
-                qrContainer.innerHTML = '<div style="font-size: 12px; text-align: center;">QR Code<br>Error</div>';
+            // Build QR data with correct format
+            let qrDataLines = [];
+            
+            // First line: main dimension with buckets
+            qrDataLines.push(`${mainLabel}_${mainDimension} | ${bucati}`);
+            
+            // Additional dimensions - each on its own line
+            additionalDimensions.forEach(dim => {
+                if (dim.L && dim.l && dim.G && dim.bucati) {
+                    qrDataLines.push(`${mainLabel}_${dim.L}x${dim.l}x${dim.G} | ${dim.bucati}`);
+                }
+            });
+            
+            // Add location on the last line
+            if (perete && coloana && rand) {
+                qrDataLines.push(`${perete}-${coloana}-${rand}`);
             }
-
+            
+            // Join all lines with newline
+            const qrData = qrDataLines.join('\n');
+            
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Show preview
             document.getElementById('preview-container').style.display = 'block';
             showNotification('Previzualizare generată cu succes!');
         }
 
         function clearForm() {
-            document.getElementById('product-name').value = '';
-            document.getElementById('product-code').value = '';
-            document.getElementById('category').value = '';
-            document.getElementById('corridor').value = '';
-            document.getElementById('rack').value = '';
-            document.getElementById('shelf').value = '';
-            document.getElementById('position').value = '';
-            document.getElementById('main-length').value = '';
-            document.getElementById('main-width').value = '';
-            document.getElementById('main-height').value = '';
-            document.getElementById('dimensions-list').innerHTML = '';
+            document.getElementById('specia').value = '';
+            document.getElementById('tip').value = '';
+            document.getElementById('nume').value = '';
+            document.getElementById('calitate').value = '';
+            document.getElementById('lungime').value = '';
+            document.getElementById('latime').value = '';
+            document.getElementById('grosime').value = '';
+            document.getElementById('bucati').value = '';
+            document.getElementById('perete').value = '';
+            document.getElementById('coloana').value = '';
+            document.getElementById('rand').value = '';
+            additionalDimensions = [];
+            renderDimensionsList();
             document.getElementById('preview-container').style.display = 'none';
             showNotification('Formularul a fost resetat!');
         }
 
-        function printLabel() {
-            if (document.getElementById('preview-container').style.display === 'none') {
-                showNotification('Generați mai întâi o previzualizare!', 'error');
-                return;
-            }
-            window.print();
-        }
-
+        // Scanner Functions
         async function startScanner() {
             const scannerContainer = document.getElementById('scanner-container');
             const videoElement = document.getElementById('scanner-video');
@@ -700,20 +782,27 @@
                     ctx.drawImage(video, 0, 0);
                     
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    const code = detectQR(imageData);
                     
                     if (code) {
                         try {
-                            const data = JSON.parse(code.data);
-                            populateFormFromQR(data);
+                            populateFormFromQR(code);
                             stopScanner();
                             showNotification('QR scanat cu succes!');
                         } catch (e) {
+                            console.error('Eroare parsare QR:', e);
                             showNotification('Format QR nerecunoscut - se continuă scanarea...', 'error');
                         }
                     }
                 }
             }, 100);
+        }
+
+        function detectQR(imageData) {
+            // Implementare simplificată pentru detectarea QR
+            // În realitate ai nevoie de o bibliotecă specializată
+            // Pentru demo, vom simula detectarea unui QR
+            return null;
         }
 
         function stopScanner() {
@@ -738,17 +827,96 @@
             }
         }
 
-        function populateFormFromQR(data) {
-            if (data.name) document.getElementById('product-name').value = data.name;
-            if (data.code) document.getElementById('product-code').value = data.code;
-            if (data.category) document.getElementById('category').value = data.category;
-            if (data.corridor) document.getElementById('corridor').value = data.corridor;
-            if (data.rack) document.getElementById('rack').value = data.rack;
-            if (data.shelf) document.getElementById('shelf').value = data.shelf;
-            if (data.position) document.getElementById('position').value = data.position;
-            if (data.mainLength) document.getElementById('main-length').value = data.mainLength;
-            if (data.mainWidth) document.getElementById('main-width').value = data.mainWidth;
-            if (data.mainHeight) document.getElementById('main-height').value = data.mainHeight;
+        function populateFormFromQR(qrData) {
+            // Parsează datele din QR
+            const lines = qrData.split('\n');
+            
+            // Resetează formularul
+            clearForm();
+            
+            // Parsează prima linie pentru datele principale
+            if (lines.length > 0) {
+                const mainLine = lines[0];
+                const [labelPart, bucatiPart] = mainLine.split(' | ');
+                
+                if (labelPart && bucatiPart) {
+                    // Parsează label-ul principal: SPECIA_TIP_NUME_CALITATE_DIMENSIUNIxDIMENSIUNIxDIMENSIUNI
+                    const parts = labelPart.split('_');
+                    
+                    if (parts.length >= 4) {
+                        // Extrage componentele
+                        const specia = parts[0];
+                        const tip = parts[1];
+                        const nume = parts[2];
+                        const calitate = parts[3];
+                        
+                        // Extrage dimensiunile (ultimul segment după ultimul _)
+                        const dimensionPart = parts[parts.length - 1];
+                        const dimensionMatch = dimensionPart.match(/(\d+)x(\d+)x(\d+)/);
+                        
+                        if (dimensionMatch) {
+                            const [, lungime, latime, grosime] = dimensionMatch;
+                            
+                            // Populează câmpurile principale
+                            document.getElementById('specia').value = specia;
+                            document.getElementById('tip').value = tip;
+                            updateNumeOptions(); // Actualizează opțiunile nume
+                            document.getElementById('nume').value = nume;
+                            document.getElementById('calitate').value = calitate;
+                            document.getElementById('lungime').value = lungime;
+                            document.getElementById('latime').value = latime;
+                            document.getElementById('grosime').value = grosime;
+                            document.getElementById('bucati').value = bucatiPart;
+                        }
+                    }
+                }
+            }
+            
+            // Procesează dimensiunile adiționale
+            for (let i = 1; i < lines.length - 1; i++) {
+                const line = lines[i];
+                const [labelPart, bucatiPart] = line.split(' | ');
+                
+                if (labelPart && bucatiPart) {
+                    // Extrage dimensiunile din label
+                    const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
+                    
+                    if (dimensionMatch) {
+                        const [, lungime, latime, grosime] = dimensionMatch;
+                        
+                        // Adaugă dimensiune adițională
+                        if (additionalDimensions.length < 3) {
+                            const id = Date.now() + i;
+                            additionalDimensions.push({
+                                id: id,
+                                L: lungime,
+                                l: latime,
+                                G: grosime,
+                                bucati: bucatiPart
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Procesează locația (ultima linie)
+            if (lines.length > 1) {
+                const lastLine = lines[lines.length - 1];
+                const locationMatch = lastLine.match(/([A-G])-(\d+)-(\d+)/);
+                
+                if (locationMatch) {
+                    const [, perete, coloana, rand] = locationMatch;
+                    document.getElementById('perete').value = perete;
+                    document.getElementById('coloana').value = coloana;
+                    document.getElementById('rand').value = rand;
+                }
+            }
+            
+            // Redessează lista de dimensiuni adiționale
+            renderDimensionsList();
+            
+            // Generează automat previzualizarea
+            setTimeout(generatePreview, 100);
         }
 
         function showNotification(message, type = 'success') {
@@ -762,64 +930,39 @@
             }, 3000);
         }
 
+        // Simulare pentru testare - detectează QR din input text
+        function simulateQRScan() {
+            // Exemplu de QR data pentru testare
+            const testQRData = `R_DIM_C24_PL_100x50x20 | 467
+R_DIM_C24_PL_80x40x15 | 234
+R_DIM_C24_PL_60x30x10 | 156
+A-5-2`;
+            
+            populateFormFromQR(testQRData);
+            showNotification('QR test scanat cu succes!');
+        }
+
+        // Pentru testare, adaugă un buton de test în consolă
+        console.log('Pentru a testa scanarea QR, rulează: simulateQRScan()');
+
+        // Închide scanner-ul cu ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 stopScanner();
             }
         });
 
-        // QR Detection fallback for simple text detection
-        function jsQR(data, width, height) {
-            // Simplified QR detection - in real implementation you'd use jsQR library
-            // For now, we'll just provide the interface
-            return null;
-        }
-
-        // Auto-save form data to prevent loss
-        function saveFormData() {
-            const formData = {
-                productName: document.getElementById('product-name').value,
-                productCode: document.getElementById('product-code').value,
-                category: document.getElementById('category').value,
-                corridor: document.getElementById('corridor').value,
-                rack: document.getElementById('rack').value,
-                shelf: document.getElementById('shelf').value,
-                position: document.getElementById('position').value,
-                mainLength: document.getElementById('main-length').value,
-                mainWidth: document.getElementById('main-width').value,
-                mainHeight: document.getElementById('main-height').value
-            };
-            
-            // Store in memory for session
-            window.tempFormData = formData;
-        }
-
-        function loadFormData() {
-            if (window.tempFormData) {
-                const data = window.tempFormData;
-                if (data.productName) document.getElementById('product-name').value = data.productName;
-                if (data.productCode) document.getElementById('product-code').value = data.productCode;
-                if (data.category) document.getElementById('category').value = data.category;
-                if (data.corridor) document.getElementById('corridor').value = data.corridor;
-                if (data.rack) document.getElementById('rack').value = data.rack;
-                if (data.shelf) document.getElementById('shelf').value = data.shelf;
-                if (data.position) document.getElementById('position').value = data.position;
-                if (data.mainLength) document.getElementById('main-length').value = data.mainLength;
-                if (data.mainWidth) document.getElementById('main-width').value = data.mainWidth;
-                if (data.mainHeight) document.getElementById('main-height').value = data.mainHeight;
-            }
-        }
-
-        // Auto-save every 2 seconds
-        setInterval(saveFormData, 2000);
-
-        // Load saved data on page load
-        window.addEventListener('load', loadFormData);
-
-        // Initialize app
+        // Inițializează aplicația
         document.addEventListener('DOMContentLoaded', function() {
             showNotification('Aplicația s-a încărcat cu succes!');
+            
+            // Adaugă event listener pentru TIP select după încărcarea paginii
+            const tipSelect = document.getElementById('tip');
+            if (tipSelect) {
+                tipSelect.addEventListener('change', updateNumeOptions);
+                console.log('Event listener added to TIP select');
+            }
         });
-    </script>
-</body>
-</html>
+
+        // Asigură-te că funcția este disponibilă global
+        window.updateNumeOptions = updateNumeOptions;
