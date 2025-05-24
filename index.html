@@ -690,7 +690,7 @@
                 Scannerul va detecta automat codurile QR și codurile de bare.<br>
                 Pentru a anula, apasă butonul de mai jos sau tasta ESC.
             </div>
-            <input type="text" id="scanner-input" class="scanner-input" placeholder="Date scanner..." />
+            <input type="text" id="scanner-input" class="scanner-input" placeholder="Date scanner..." autocomplete="off" spellcheck="false" />
             <div style="margin-top: 30px;">
                 <button class="btn-secondary" onclick="stopGryphonScanner()">Anulează</button>
             </div>
@@ -949,15 +949,90 @@
             document.getElementById('gryphon-status').textContent = 'Scanner activ - Scanează QR-ul acum!';
         }
         
-        function handleGryphonInput(event) {
+        function startGryphonScanner() {
+            if (gryphonActive) return;
+            
+            gryphonActive = true;
+            const gryphonContainer = document.getElementById('gryphon-container');
+            const scannerInput = document.getElementById('scanner-input');
+            
+            gryphonContainer.style.display = 'block';
+            
+            // Dezactivează toate shortcut-urile de tastatură temporar
+            document.addEventListener('keydown', preventBrowserShortcuts, true);
+            
+            // Focus pe input pentru a primi datele de la scanner
+            setTimeout(() => {
+                scannerInput.focus();
+                scannerInput.value = '';
+                
+                // Asigură că input-ul rămâne activ
+                scannerInput.addEventListener('blur', () => {
+                    if (gryphonActive) {
+                        setTimeout(() => scannerInput.focus(), 10);
+                    }
+                });
+            }, 100);
+            
+            // Event listener pentru input de la scanner
+            scannerInput.addEventListener('keydown', handleGryphonInput, true);
+            scannerInput.addEventListener('input', handleGryphonData);
+            scannerInput.addEventListener('paste', handleGryphonPaste);
+            
+            // Timeout de siguranță
+            setTimeout(() => {
+                if (gryphonActive) {
+                    showNotification('Scanner Gryphon gata! Scanează un cod QR sau cod de bare.', 'warning');
+                }
+            }, 500);
+            
+            document.getElementById('gryphon-status').textContent = 'Scanner activ - Scanează QR-ul acum!';
+        }
+        
+        function preventBrowserShortcuts(event) {
+            // Previne shortcut-urile comune ale browserului care pot interfera
+            const forbiddenKeys = [
+                'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+            ];
+            
+            if (forbiddenKeys.includes(event.key)) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            
+            // Previne Ctrl+H (History), Ctrl+J (Downloads), etc.
+            if (event.ctrlKey || event.metaKey) {
+                const forbiddenCombos = ['h', 'j', 'd', 'l', 'r', 't', 'n', 'w'];
+                if (forbiddenCombos.includes(event.key.toLowerCase())) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }
+            
+            // Permite doar Escape pentru închidere
             if (event.key === 'Escape') {
                 stopGryphonScanner();
-                return;
+                return false;
+            }
+        }
+        
+        function handleGryphonInput(event) {
+            // Oprește propagarea pentru a preveni shortcut-urile browserului
+            event.stopPropagation();
+            
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                stopGryphonScanner();
+                return false;
             }
             
             // Enter key înseamnă că scannerul a terminat de citit
             if (event.key === 'Enter') {
                 event.preventDefault();
+                event.stopPropagation();
+                
                 const scannedData = document.getElementById('scanner-input').value.trim();
                 
                 if (scannedData) {
@@ -969,8 +1044,23 @@
                 
                 // Reset input pentru următoarea scanare
                 document.getElementById('scanner-input').value = '';
-                return false; // Previne submit-ul formularului
+                return false;
             }
+            
+            // Pentru alte taste, lasă input-ul să le proceseze normal
+            return true;
+        }
+        
+        function handleGryphonPaste(event) {
+            // Gestionează paste event-ul (unele scannere "lipesc" datele)
+            event.stopPropagation();
+            
+            setTimeout(() => {
+                const scannedData = document.getElementById('scanner-input').value.trim();
+                if (scannedData && scannedData.length > 10) {
+                    processScannedData(scannedData);
+                }
+            }, 100);
         }
         
         function handleGryphonData(event) {
@@ -981,14 +1071,13 @@
                 document.getElementById('gryphon-status').textContent = 'Date primite... Procesare...';
                 
                 // Procesează automat dacă se detectează sfârșitul datelor
-                // Unele scannere nu trimit Enter, ci doar datele
                 clearTimeout(window.gryphonTimeout);
                 window.gryphonTimeout = setTimeout(() => {
                     if (scannedData.length > 0 && gryphonActive) {
                         processScannedData(scannedData);
                         document.getElementById('scanner-input').value = '';
                     }
-                }, 500); // Așteaptă 500ms pentru a fi sigur că s-au primit toate datele
+                }, 300); // Redus la 300ms pentru răspuns mai rapid
             }
         }
         
@@ -1014,10 +1103,22 @@
             const gryphonContainer = document.getElementById('gryphon-container');
             const scannerInput = document.getElementById('scanner-input');
             
+            // Reactivează shortcut-urile browserului
+            document.removeEventListener('keydown', preventBrowserShortcuts, true);
+            
             gryphonContainer.style.display = 'none';
-            scannerInput.onkeydown = null;
-            scannerInput.oninput = null;
+            
+            // Curăță event listener-ii
+            scannerInput.removeEventListener('keydown', handleGryphonInput, true);
+            scannerInput.removeEventListener('input', handleGryphonData);
+            scannerInput.removeEventListener('paste', handleGryphonPaste);
             scannerInput.value = '';
+            
+            // Curăță timeout-ul
+            if (window.gryphonTimeout) {
+                clearTimeout(window.gryphonTimeout);
+                window.gryphonTimeout = null;
+            }
             
             // Returnează focus la elementul principal
             document.body.focus();
@@ -1159,106 +1260,147 @@
         // ========== QR DATA PROCESSING ==========
 
         function populateFormFromQR(qrData) {
-            const lines = qrData.split('\n');
+            console.log('QR Data primit:', qrData);
+            
+            // Curăță datele - înlocuiește caracterele speciale
+            let cleanedData = qrData.replace(/Â/g, '|').trim();
+            console.log('Date curățate:', cleanedData);
+            
+            // Împarte în linii
+            const lines = cleanedData.split('\n').filter(line => line.trim() !== '');
+            console.log('Linii filtrate:', lines);
+            
             clearForm();
             
-            console.log('QR Data primit:', qrData);
-            console.log('Linii:', lines);
+            if (lines.length === 0) {
+                throw new Error('Date QR goale după curățare');
+            }
             
-            if (lines.length > 0) {
-                const mainLine = lines[0];
-                const [labelPart, bucatiPart] = mainLine.split(' | ');
-                
-                if (labelPart && bucatiPart) {
-                    // Parsare îmbunătățită pentru a gestiona numele cu underscore
-                    const parts = labelPart.split('_');
-                    
-                    if (parts.length >= 4) {
-                        const specia = parts[0];
-                        const tip = parts[1];
-                        
-                        // Găsește dimensiunea la sfârșitul string-ului
-                        const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
-                        let nume, calitate;
-                        
-                        if (dimensionMatch) {
-                            // Elimină dimensiunea din string pentru a obține numele și calitatea
-                            const withoutDimension = labelPart.replace(/_\d+x\d+x\d+$/, '');
-                            const partsWithoutDim = withoutDimension.split('_');
-                            
-                            // Prima parte este specia, a doua este tipul
-                            // Ultimele părți sunt calitatea
-                            // Tot ce e între tip și calitate este numele
-                            if (partsWithoutDim.length >= 4) {
-                                calitate = partsWithoutDim[partsWithoutDim.length - 1];
-                                
-                                // Numele este tot ce e între tip și calitate
-                                const numeParts = partsWithoutDim.slice(2, -1);
-                                nume = numeParts.join('_');
-                            }
-                            
-                            const [, lungime, latime, grosime] = dimensionMatch;
-                            
-                            console.log('Parsare:', { specia, tip, nume, calitate, lungime, latime, grosime });
-                            
-                            document.getElementById('specia').value = specia;
-                            document.getElementById('tip').value = tip;
-                            updateNumeOptions();
-                            document.getElementById('nume').value = nume;
-                            document.getElementById('calitate').value = calitate;
-                            document.getElementById('lungime').value = lungime;
-                            document.getElementById('latime').value = latime;
-                            document.getElementById('grosime').value = grosime;
-                            document.getElementById('bucati').value = bucatiPart;
-                        }
-                    }
+            // Procesează prima linie (sau singura linie dacă totul e pe o linie)
+            let mainLine = lines[0];
+            console.log('Linia principală originală:', mainLine);
+            
+            // Pentru formatul: R_DIM_C24_PL_50000x600x80 | 125A-1-0
+            // Separăm pe |
+            let labelPart, bucatiAndLocationPart;
+            
+            if (mainLine.includes('|')) {
+                [labelPart, bucatiAndLocationPart] = mainLine.split('|').map(s => s.trim());
+            } else {
+                throw new Error('Formatul QR nu conține separatorul |');
+            }
+            
+            console.log('Label part brut:', labelPart);
+            console.log('Bucăți și locație part:', bucatiAndLocationPart);
+            
+            // Extrage locația din partea cu bucățile
+            // Format așteptat: 125A-1-0 (număr + literă + număr + număr)
+            const locationPattern = /([A-G])-?(\d+)-?(\d+)$/;
+            const locationMatch = bucatiAndLocationPart.match(locationPattern);
+            
+            let bucatiPart = bucatiAndLocationPart;
+            let perete = '', coloana = '', rand = '';
+            
+            if (locationMatch) {
+                // Extrage locația și bucățile
+                const fullLocationMatch = bucatiAndLocationPart.match(/(\d+)([A-G])-?(\d+)-?(\d+)$/);
+                if (fullLocationMatch) {
+                    const [, bucati, pereteVal, coloanaVal, randVal] = fullLocationMatch;
+                    bucatiPart = bucati;
+                    perete = pereteVal;
+                    coloana = coloanaVal;
+                    rand = randVal;
+                    console.log('Extragere reușită:', { bucati, perete, coloana, rand });
+                }
+            }
+            
+            console.log('Bucăți finale:', bucatiPart);
+            console.log('Locația finală:', { perete, coloana, rand });
+            
+            // Parsează labelPart pentru a obține componentele
+            // Format așteptat: R_DIM_C24_PL_50000x600x80
+            
+            // Găsește dimensiunile la sfârșitul string-ului
+            const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
+            if (!dimensionMatch) {
+                throw new Error('Nu s-au găsit dimensiuni în format valid (LxlxG)');
+            }
+            
+            const [, lungime, latime, grosime] = dimensionMatch;
+            console.log('Dimensiuni:', { lungime, latime, grosime });
+            
+            // Elimină dimensiunile din labelPart pentru a obține restul
+            const withoutDimensions = labelPart.replace(/_\d+x\d+x\d+$/, '');
+            console.log('Fără dimensiuni:', withoutDimensions);
+            
+            // Împarte pe underscore
+            const parts = withoutDimensions.split('_').filter(p => p.length > 0);
+            console.log('Părți separate:', parts);
+            
+            if (parts.length < 4) {
+                throw new Error(`Format insuficient: găsite ${parts.length} părți, trebuie minim 4 (Specia_Tip_Nume_Calitate)`);
+            }
+            
+            // Identifică componentele
+            const specia = parts[0];
+            const tip = parts[1];
+            const calitate = parts[parts.length - 1]; // Ultimul element este calitatea
+            
+            // Numele este tot ce e între tip și calitate
+            const numeParts = parts.slice(2, -1);
+            const nume = numeParts.length > 0 ? numeParts.join('_') : parts[2]; // Fallback dacă e doar o parte
+            
+            console.log('Componente finale:', { specia, tip, nume, calitate, lungime, latime, grosime, bucatiPart });
+            
+            // Validează că avem toate componentele necesare
+            if (!specia || !tip || !nume || !calitate) {
+                throw new Error(`Componente lipsă: specia="${specia}", tip="${tip}", nume="${nume}", calitate="${calitate}"`);
+            }
+            
+            // Completează formularul
+            document.getElementById('specia').value = specia;
+            document.getElementById('tip').value = tip;
+            updateNumeOptions(); // Actualizează opțiunile pentru nume
+            
+            // Verifică dacă numele există în opțiuni după update
+            setTimeout(() => {
+                const numeSelect = document.getElementById('nume');
+                const numeOption = numeSelect.querySelector(`option[value="${nume}"]`);
+                if (numeOption) {
+                    numeSelect.value = nume;
+                    console.log('Nume setat cu succes:', nume);
                 } else {
-                    showNotification('Format QR detectat, dar structura nu este recunoscută. Se afișează datele brute.', 'error');
-                    alert('Date QR detectate:\n' + qrData);
-                    throw new Error('Format QR nerecunoscut');
+                    console.log('Numele nu există în opțiuni, se menține valoarea:', nume);
+                    // Adaugă opțiunea temporar
+                    const newOption = document.createElement('option');
+                    newOption.value = nume;
+                    newOption.textContent = nume;
+                    numeSelect.appendChild(newOption);
+                    numeSelect.value = nume;
                 }
+            }, 50);
+            
+            document.getElementById('calitate').value = calitate;
+            document.getElementById('lungime').value = lungime;
+            document.getElementById('latime').value = latime;
+            document.getElementById('grosime').value = grosime;
+            
+            // Setează bucățile dacă există și sunt numerice
+            if (bucatiPart && !isNaN(bucatiPart)) {
+                document.getElementById('bucati').value = bucatiPart;
             }
             
-            // Procesează dimensiunile adiționale
-            for (let i = 1; i < lines.length - 1; i++) {
-                const line = lines[i];
-                const [labelPart, bucatiPart] = line.split(' | ');
-                
-                if (labelPart && bucatiPart) {
-                    const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
-                    
-                    if (dimensionMatch) {
-                        const [, lungime, latime, grosime] = dimensionMatch;
-                        
-                        if (additionalDimensions.length < 3) {
-                            const id = Date.now() + i;
-                            additionalDimensions.push({
-                                id: id,
-                                L: lungime,
-                                l: latime,
-                                G: grosime,
-                                bucati: bucatiPart
-                            });
-                        }
-                    }
-                }
+            // Setează locația dacă există
+            if (perete && coloana && rand) {
+                document.getElementById('perete').value = perete;
+                document.getElementById('coloana').value = coloana;
+                document.getElementById('rand').value = rand;
             }
             
-            // Procesează locația
-            if (lines.length > 1) {
-                const lastLine = lines[lines.length - 1];
-                const locationMatch = lastLine.match(/([A-G])-(\d+)-(\d+)/);
-                
-                if (locationMatch) {
-                    const [, perete, coloana, rand] = locationMatch;
-                    document.getElementById('perete').value = perete;
-                    document.getElementById('coloana').value = coloana;
-                    document.getElementById('rand').value = rand;
-                }
-            }
+            // Nu procesăm linii suplimentare în acest format
             
             renderDimensionsList();
-            setTimeout(generatePreview, 100);
+            setTimeout(generatePreview, 200);
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -1275,10 +1417,8 @@
         }
 
         function simulateQRScan() {
-            const testQRData = `R_DIM_KVH_C24_PL_100x50x20 | 467
-R_DIM_KVH_C24_PL_80x40x15 | 234
-R_DIM_KVH_C24_PL_60x30x10 | 156
-A-5-2`;
+            // Test cu formatul real detectat
+            const testQRData = `R_DIM_C24_PL_50000x600x80 Â 125A-1-0`;
             
             populateFormFromQR(testQRData);
             showNotification('QR test scanat cu succes!');
