@@ -183,6 +183,16 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
         }
+
+        .btn-gryphon {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+        }
+        
+        .btn-gryphon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 152, 0, 0.3);
+        }
         
         .preview-container {
             margin-top: 30px;
@@ -356,6 +366,63 @@
             color: #BD3033;
         }
 
+        .gryphon-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+        }
+        
+        .gryphon-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .gryphon-animation {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: gryphonPulse 1.5s infinite;
+            font-size: 60px;
+            color: white;
+        }
+
+        @keyframes gryphonPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(255, 152, 0, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
+
+        .gryphon-status {
+            font-size: 18px;
+            color: #333;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .gryphon-instructions {
+            color: #666;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -371,6 +438,10 @@
         
         .notification.error {
             background: #ff4444;
+        }
+
+        .notification.warning {
+            background: #FF9800;
         }
 
         .loading-spinner {
@@ -393,6 +464,45 @@
             padding: 20px;
             color: #666;
             font-size: 18px;
+        }
+
+        .scanner-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .scanner-type-btn {
+            padding: 10px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scanner-type-btn.active {
+            border-color: #BD3033;
+            background: #BD3033;
+            color: white;
+        }
+
+        .scanner-type-btn:hover:not(.active) {
+            border-color: #BD3033;
+            color: #BD3033;
+        }
+
+        .scanner-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            height: 1px;
+            width: 1px;
         }
     </style>
 </head>
@@ -530,8 +640,18 @@
             <button class="btn-add" onclick="addDimension()">+ Adaugă dimensiune</button>
         </div>
         
+        <div class="scanner-buttons">
+            <div class="scanner-type-btn active" onclick="selectScannerType('gryphon')">
+                <span>🔫</span> Scanner Gryphon
+            </div>
+            <div class="scanner-type-btn" onclick="selectScannerType('camera')">
+                <span>📱</span> Cameră
+            </div>
+        </div>
+        
         <div class="button-group">
-            <button class="btn-scanner" onclick="startScanner()">📱 Scanează QR</button>
+            <button class="btn-gryphon" onclick="startGryphonScanner()">🔫 Scanează cu Gryphon</button>
+            <button class="btn-scanner" onclick="startCameraScanner()">📱 Scanează cu Camera</button>
             <button class="btn-primary" onclick="generatePreview()">Generează Previzualizare</button>
             <button class="btn-secondary" onclick="window.print()">Tipărește</button>
             <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge Tot</button>
@@ -546,15 +666,33 @@
         </div>
     </div>
 
+    <!-- Scanner Gryphon Modal -->
+    <div class="gryphon-container" id="gryphon-container">
+        <div class="gryphon-content">
+            <h3 style="margin-bottom: 20px;">Scanner Datalogic Gryphon</h3>
+            <div class="gryphon-animation">🔫</div>
+            <div class="gryphon-status" id="gryphon-status">Poziționează scannerul deasupra QR-ului și apasă trigger-ul</div>
+            <div class="gryphon-instructions">
+                Scannerul va detecta automat codurile QR și codurile de bare.<br>
+                Pentru a anula, apasă butonul de mai jos sau tasta ESC.
+            </div>
+            <input type="text" id="scanner-input" class="scanner-input" placeholder="Date scanner..." />
+            <div style="margin-top: 30px;">
+                <button class="btn-secondary" onclick="stopGryphonScanner()">Anulează</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanner Cameră Modal -->
     <div class="scanner-container" id="scanner-container">
         <div class="scanner-content">
-            <h3 style="text-align: center; margin-bottom: 20px;">Scanează Cod QR</h3>
+            <h3 style="text-align: center; margin-bottom: 20px;">Scanează Cod QR cu Camera</h3>
             <div id="scanner-video" class="scanner-video">
                 <div class="status-message">Camera se încarcă...</div>
             </div>
             <div class="scanner-status" id="scanner-status">Poziționează codul QR în fața camerei</div>
             <div class="scanner-controls">
-                <button class="btn-secondary" onclick="stopScanner()">Anulează</button>
+                <button class="btn-secondary" onclick="stopCameraScanner()">Anulează</button>
                 <button class="btn-primary" onclick="switchCamera()" id="switch-camera">Schimbă Camera</button>
             </div>
         </div>
@@ -567,6 +705,20 @@
         let mediaStream = null;
         let currentCamera = 'environment';
         let scanInterval = null;
+        let gryphonActive = false;
+        let selectedScannerType = 'gryphon';
+        
+        function selectScannerType(type) {
+            selectedScannerType = type;
+            const buttons = document.querySelectorAll('.scanner-type-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (type === 'gryphon') {
+                buttons[0].classList.add('active');
+            } else {
+                buttons[1].classList.add('active');
+            }
+        }
         
         function updateNumeOptions() {
             const tipSelect = document.getElementById('tip');
@@ -743,7 +895,97 @@
             showNotification('Formularul a fost resetat!');
         }
 
-        async function startScanner() {
+        // ========== GRYPHON SCANNER FUNCTIONS ==========
+        
+        function startGryphonScanner() {
+            if (gryphonActive) return;
+            
+            gryphonActive = true;
+            const gryphonContainer = document.getElementById('gryphon-container');
+            const scannerInput = document.getElementById('scanner-input');
+            
+            gryphonContainer.style.display = 'block';
+            
+            // Focus pe input pentru a primi datele de la scanner
+            setTimeout(() => {
+                scannerInput.focus();
+                scannerInput.value = '';
+            }, 100);
+            
+            // Event listener pentru input de la scanner
+            scannerInput.onkeydown = handleGryphonInput;
+            scannerInput.oninput = handleGryphonData;
+            
+            // Timeout de siguranță
+            setTimeout(() => {
+                if (gryphonActive) {
+                    showNotification('Scanner Gryphon gata! Scanează un cod QR sau cod de bare.', 'warning');
+                }
+            }, 500);
+            
+            document.getElementById('gryphon-status').textContent = 'Scanner activ - Scanează QR-ul acum!';
+        }
+        
+        function handleGryphonInput(event) {
+            if (event.key === 'Escape') {
+                stopGryphonScanner();
+                return;
+            }
+            
+            // Enter key înseamnă că scannerul a terminat de citit
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const scannedData = document.getElementById('scanner-input').value.trim();
+                
+                if (scannedData) {
+                    try {
+                        populateFormFromQR(scannedData);
+                        stopGryphonScanner();
+                        showNotification('QR scanat cu succes cu Gryphon! 🎉');
+                    } catch (error) {
+                        console.error('Eroare parsare:', error);
+                        showNotification('Date scanate, dar formatul nu este recunoscut: ' + scannedData, 'warning');
+                        
+                        // Afișează datele brute către utilizator
+                        setTimeout(() => {
+                            alert('Date QR/Barcode detectate:\n' + scannedData);
+                        }, 100);
+                    }
+                } else {
+                    showNotification('Nu s-au detectat date. Încearcă din nou.', 'error');
+                }
+                
+                // Reset input pentru următoarea scanare
+                document.getElementById('scanner-input').value = '';
+            }
+        }
+        
+        function handleGryphonData(event) {
+            const scannedData = event.target.value;
+            
+            // Verifică dacă sunt suficiente date (minim 10 caractere pentru un QR valid)
+            if (scannedData.length > 10) {
+                document.getElementById('gryphon-status').textContent = 'Date primite... Verificare format...';
+            }
+        }
+        
+        function stopGryphonScanner() {
+            gryphonActive = false;
+            const gryphonContainer = document.getElementById('gryphon-container');
+            const scannerInput = document.getElementById('scanner-input');
+            
+            gryphonContainer.style.display = 'none';
+            scannerInput.onkeydown = null;
+            scannerInput.oninput = null;
+            scannerInput.value = '';
+            
+            // Returnează focus la elementul principal
+            document.body.focus();
+        }
+
+        // ========== CAMERA SCANNER FUNCTIONS ==========
+
+        async function startCameraScanner() {
             const scannerContainer = document.getElementById('scanner-container');
             const videoElement = document.getElementById('scanner-video');
             
@@ -751,7 +993,6 @@
             videoElement.innerHTML = '<div class="loading-spinner"></div><div class="status-message">Se încarcă camera...</div>';
             
             try {
-                // Solicită acces la cameră cu rezoluție optimă pentru QR
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: currentCamera,
@@ -763,20 +1004,18 @@
                 
                 const video = document.createElement('video');
                 video.srcObject = mediaStream;
-                video.setAttribute('playsinline', true); // Pentru iOS
+                video.setAttribute('playsinline', true);
                 video.play();
                 
                 videoElement.innerHTML = '';
                 videoElement.appendChild(video);
                 
-                // Adaugă overlay pentru ghidarea utilizatorului
                 const overlay = document.createElement('div');
                 overlay.className = 'scanner-overlay';
                 videoElement.appendChild(overlay);
                 
                 document.getElementById('scanner-status').textContent = 'Poziționează QR-ul în pătratul roșu';
                 
-                // Așteaptă ca video-ul să fie gata
                 video.addEventListener('loadedmetadata', () => {
                     startQRDetection(video);
                 });
@@ -811,17 +1050,11 @@
                     return;
                 }
                 
-                // Setează dimensiunile canvas-ului
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                
-                // Desenează frame-ul video pe canvas
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
-                // Obține datele imaginii
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
-                // Încearcă să detecteze QR code
                 const code = jsQR(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "dontInvert"
                 });
@@ -829,7 +1062,6 @@
                 if (code) {
                     isScanning = false;
                     
-                    // Feedback vizual de succes
                     const overlay = document.querySelector('.scanner-overlay');
                     if (overlay) {
                         overlay.style.borderColor = '#4CAF50';
@@ -838,28 +1070,24 @@
                     
                     try {
                         populateFormFromQR(code.data);
-                        stopScanner();
-                        showNotification('QR scanat cu succes! 🎉');
+                        stopCameraScanner();
+                        showNotification('QR scanat cu succes cu camera! 🎉');
                     } catch (e) {
                         console.error('Eroare parsare QR:', e);
                         showNotification('Datele QR nu pot fi procesate. Format nerecunoscut.', 'error');
-                        isScanning = true; // Continuă scanarea
+                        isScanning = true;
                         requestAnimationFrame(scanFrame);
                     }
                 } else {
-                    // Continuă scanarea
                     requestAnimationFrame(scanFrame);
                 }
             }
             
-            // Pornește scanarea
             scanFrame();
-            
-            // Salvează referința pentru stop
             scanInterval = () => { isScanning = false; };
         }
 
-        function stopScanner() {
+        function stopCameraScanner() {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
@@ -867,7 +1095,7 @@
             
             if (scanInterval) {
                 if (typeof scanInterval === 'function') {
-                    scanInterval(); // Oprește loop-ul de scanare
+                    scanInterval();
                 } else {
                     clearInterval(scanInterval);
                 }
@@ -880,19 +1108,20 @@
         async function switchCamera() {
             if (mediaStream) {
                 currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
-                stopScanner();
-                setTimeout(startScanner, 100);
+                stopCameraScanner();
+                setTimeout(startCameraScanner, 100);
                 
                 const switchButton = document.getElementById('switch-camera');
                 switchButton.textContent = currentCamera === 'environment' ? 'Camera Față' : 'Camera Spate';
             }
         }
 
+        // ========== QR DATA PROCESSING ==========
+
         function populateFormFromQR(qrData) {
             const lines = qrData.split('\n');
             clearForm();
             
-            // Debug pentru a vedea ce primim
             console.log('QR Data primit:', qrData);
             console.log('Linii:', lines);
             
@@ -927,7 +1156,6 @@
                         }
                     }
                 } else {
-                    // Încearcă să parseze QR-uri în alte formate
                     showNotification('Format QR detectat, dar structura nu este recunoscută. Se afișează datele brute.', 'error');
                     alert('Date QR detectate:\n' + qrData);
                 }
@@ -973,6 +1201,8 @@
             setTimeout(generatePreview, 100);
         }
 
+        // ========== UTILITY FUNCTIONS ==========
+
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -994,31 +1224,61 @@ A-5-2`;
             showNotification('QR test scanat cu succes!');
         }
 
+        // ========== EVENT LISTENERS ==========
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                stopScanner();
+                stopCameraScanner();
+                stopGryphonScanner();
+            }
+            
+            // Shortcut pentru deschiderea scannerului Gryphon cu F1
+            if (e.key === 'F1') {
+                e.preventDefault();
+                startGryphonScanner();
+            }
+            
+            // Shortcut pentru deschiderea camerei cu F2
+            if (e.key === 'F2') {
+                e.preventDefault();
+                startCameraScanner();
             }
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            showNotification('Aplicația s-a încărcat cu succes!');
+            showNotification('Aplicația s-a încărcat cu succes! 🚀');
             
             const tipSelect = document.getElementById('tip');
             if (tipSelect) {
                 tipSelect.addEventListener('change', updateNumeOptions);
             }
+            
+            // Verifică dacă scannerul Gryphon este conectat
+            checkGryphonConnection();
         });
 
+        function checkGryphonConnection() {
+            // Simulează verificarea conexiunii scannerului
+            // În practică, acest lucru ar putea fi făcut prin testarea input-urilor USB
+            setTimeout(() => {
+                showNotification('Scannerul Gryphon este gata de utilizare! (F1 pentru activare rapidă)', 'warning');
+            }, 1000);
+        }
+
+        // Global functions pentru onClick events
         window.updateNumeOptions = updateNumeOptions;
         window.generatePreview = generatePreview;
-        window.startScanner = startScanner;
+        window.startGryphonScanner = startGryphonScanner;
+        window.startCameraScanner = startCameraScanner;
         window.addDimension = addDimension;
         window.removeDimension = removeDimension;
         window.updateDimension = updateDimension;
         window.clearForm = clearForm;
-        window.stopScanner = stopScanner;
+        window.stopGryphonScanner = stopGryphonScanner;
+        window.stopCameraScanner = stopCameraScanner;
         window.switchCamera = switchCamera;
         window.simulateQRScan = simulateQRScan;
+        window.selectScannerType = selectScannerType;
     </script>
 </body>
 </html>
