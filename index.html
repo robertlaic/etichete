@@ -124,13 +124,43 @@
         .dimensions-group {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 8px;
+        }
+        
+        .dimensions-group input {
+            padding: 10px;
+            font-size: 14px;
         }
         
         .location-group {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 15px;
+        }
+
+        .location-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .location-label-fixed {
+            font-weight: 600 !important;
+            color: #333 !important;
+            font-size: 0.85em !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block !important;
+            margin-bottom: 8px !important;
+            visibility: visible !important;
+        }
+
+        .location-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .location-field select {
+            margin-top: 0 !important;
         }
         
         .button-group {
@@ -231,7 +261,7 @@
             bottom: 100px;
             right: 40px;
             border: 2px solid #333;
-            padding: 10px;
+            padding: 8px;
             background: white;
         }
 
@@ -266,7 +296,9 @@
         }
         
         .dimension-item input {
-            width: 80px;
+            width: 94px;
+            padding: 10px;
+            font-size: 14px;
         }
         
         .btn-remove {
@@ -653,7 +685,7 @@
             <button class="btn-add" onclick="addDimension()">+ Adaugă dimensiune</button>
         </div>
         
-        <div class="scanner-buttons">
+        <div class="scanner-buttons" style="display: none;">
             <div class="scanner-type-btn active" onclick="selectScannerType('gryphon')">
                 <span>🔫</span> Scanner Gryphon
             </div>
@@ -666,7 +698,7 @@
             <button class="btn-gryphon" onclick="startGryphonScanner()">🔫 Scanează cu Gryphon</button>
             <button class="btn-scanner" onclick="startCameraScanner()">📱 Scanează cu Camera</button>
             <button class="btn-primary" onclick="generatePreview()">Generează Previzualizare</button>
-            <button class="btn-secondary" onclick="window.print()">Tipărește</button>
+            <button class="btn-secondary" onclick="printLabel()">Tipărește</button>
             <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge Tot</button>
         </div>
         
@@ -880,8 +912,8 @@
             
             new QRCode(qrContainer, {
                 text: qrData,
-                width: 200,
-                height: 200,
+                width: 150,
+                height: 150,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
@@ -961,23 +993,45 @@
             // Dezactivează toate shortcut-urile de tastatură temporar
             document.addEventListener('keydown', preventBrowserShortcuts, true);
             
+            // Forțează focus pe aplicația noastră
+            window.focus();
+            
             // Focus pe input pentru a primi datele de la scanner
             setTimeout(() => {
                 scannerInput.focus();
                 scannerInput.value = '';
                 
-                // Asigură că input-ul rămâne activ
-                scannerInput.addEventListener('blur', () => {
+                // Asigură că input-ul rămâne activ chiar și dacă sunt alte aplicații deschise
+                const focusInterval = setInterval(() => {
                     if (gryphonActive) {
-                        setTimeout(() => scannerInput.focus(), 10);
+                        if (document.hasFocus()) {
+                            scannerInput.focus();
+                        } else {
+                            // Încearcă să readucă focus pe aplicația noastră
+                            window.focus();
+                            scannerInput.focus();
+                        }
+                    } else {
+                        clearInterval(focusInterval);
                     }
-                });
+                }, 100);
+                
+                // Salvează intervalul pentru cleanup
+                window.gryphonFocusInterval = focusInterval;
             }, 100);
             
             // Event listener pentru input de la scanner
             scannerInput.addEventListener('keydown', handleGryphonInput, true);
             scannerInput.addEventListener('input', handleGryphonData);
             scannerInput.addEventListener('paste', handleGryphonPaste);
+            
+            // Listener global pentru a intercepta datele chiar și când aplicația nu e în focus
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('beforeunload', () => {
+                if (gryphonActive) {
+                    stopGryphonScanner();
+                }
+            });
             
             // Timeout de siguranță
             setTimeout(() => {
@@ -987,6 +1041,18 @@
             }, 500);
             
             document.getElementById('gryphon-status').textContent = 'Scanner activ - Scanează QR-ul acum!';
+        }
+        
+        function handleVisibilityChange() {
+            if (gryphonActive && !document.hidden) {
+                // Când aplicația devine vizibilă din nou, asigură focus
+                setTimeout(() => {
+                    const scannerInput = document.getElementById('scanner-input');
+                    if (scannerInput) {
+                        scannerInput.focus();
+                    }
+                }, 100);
+            }
         }
         
         function preventBrowserShortcuts(event) {
@@ -1105,6 +1171,7 @@
             
             // Reactivează shortcut-urile browserului
             document.removeEventListener('keydown', preventBrowserShortcuts, true);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             
             gryphonContainer.style.display = 'none';
             
@@ -1114,10 +1181,15 @@
             scannerInput.removeEventListener('paste', handleGryphonPaste);
             scannerInput.value = '';
             
-            // Curăță timeout-ul
+            // Curăță timeout-ul și intervalul
             if (window.gryphonTimeout) {
                 clearTimeout(window.gryphonTimeout);
                 window.gryphonTimeout = null;
+            }
+            
+            if (window.gryphonFocusInterval) {
+                clearInterval(window.gryphonFocusInterval);
+                window.gryphonFocusInterval = null;
             }
             
             // Returnează focus la elementul principal
@@ -1405,6 +1477,111 @@
 
         // ========== UTILITY FUNCTIONS ==========
 
+        function printLabel() {
+            const previewContainer = document.getElementById('preview-container');
+            const labelPreview = document.getElementById('label-preview');
+            
+            if (!labelPreview || previewContainer.style.display === 'none') {
+                showNotification('Vă rugăm să generați mai întâi previzualizarea!', 'error');
+                return;
+            }
+            
+            // Creează un element temporar pentru tipărire
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Etichetă</title>
+                    <style>
+                        @page {
+                            size: A4 landscape;
+                            margin: 0;
+                        }
+                        
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            width: 297mm;
+                            height: 210mm;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                            font-family: Arial, sans-serif;
+                            overflow: hidden;
+                        }
+                        
+                        .print-label {
+                            width: 297mm;
+                            height: 210mm;
+                            padding: 40px;
+                            position: relative;
+                            background: white;
+                            page-break-after: avoid;
+                            page-break-before: avoid;
+                            page-break-inside: avoid;
+                        }
+                        
+                        .label-content {
+                            font-family: Arial, sans-serif;
+                            font-size: 96px;
+                            font-weight: bold;
+                            line-height: 1.3;
+                        }
+                        
+                        .label-dimensions {
+                            margin-top: 40px;
+                            font-size: 72px;
+                            line-height: 1.5;
+                        }
+                        
+                        .qr-container {
+                            position: absolute;
+                            bottom: 100px;
+                            right: 40px;
+                            border: 2px solid #333;
+                            padding: 8px;
+                            background: white;
+                        }
+                        
+                        .location-label {
+                            position: absolute;
+                            bottom: 40px;
+                            right: 40px;
+                            font-family: Arial, sans-serif;
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #333;
+                            background: white;
+                            padding: 10px;
+                            border: 2px solid #333;
+                            min-width: 200px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-label">
+                        ${labelPreview.innerHTML}
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            
+            // Așteaptă ca documentul să se încarce și apoi tipărește
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 100);
+            };
+        }
+
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -1479,6 +1656,8 @@
         window.switchCamera = switchCamera;
         window.simulateQRScan = simulateQRScan;
         window.selectScannerType = selectScannerType;
+        window.printLabel = printLabel;
+        window.handleVisibilityChange = handleVisibilityChange;
     </script>
 </body>
 </html>
