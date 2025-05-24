@@ -13,40 +13,39 @@
         }
 
         @media print {
-            body * {
+            * {
                 visibility: hidden !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
             }
 
-            #preview-container, 
-            #preview-container * {
+            #label-preview, 
+            #label-preview * {
                 visibility: visible !important;
             }
 
-            #preview-container {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: white;
-                border: none;
-                border-radius: 0;
-                box-shadow: none;
-                padding: 0;
-                margin: 0;
-                overflow: hidden;
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
-            .label-preview {
-                width: 100% !important;
-                height: 100% !important;
+            #label-preview {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 297mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 40px !important;
                 border: none !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
-                margin: 0 !important;
-                page-break-after: avoid;
-                page-break-before: avoid;
-                page-break-inside: avoid;
+                background: white !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+                page-break-inside: avoid !important;
+                transform: none !important;
             }
         }
 
@@ -229,11 +228,25 @@
         
         .qr-container {
             position: absolute;
-            bottom: 40px;
+            bottom: 100px;
             right: 40px;
             border: 2px solid #333;
             padding: 10px;
             background: white;
+        }
+
+        .location-label {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            background: white;
+            padding: 10px;
+            border: 2px solid #333;
+            min-width: 200px;
         }
         
         .dimensions-list {
@@ -662,6 +675,7 @@
                 <div class="label-content" id="label-content"></div>
                 <div class="label-dimensions" id="label-dimensions"></div>
                 <div class="qr-container" id="qr-container"></div>
+                <div class="location-label" id="location-label"></div>
             </div>
         </div>
     </div>
@@ -873,6 +887,15 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
             
+            // Adaugă locația sub QR
+            const locationLabel = document.getElementById('location-label');
+            if (perete && coloana && rand) {
+                locationLabel.textContent = `Locație etichetă: ${perete}-${coloana}-${rand}`;
+                locationLabel.style.display = 'block';
+            } else {
+                locationLabel.style.display = 'none';
+            }
+            
             document.getElementById('preview-container').style.display = 'block';
             showNotification('Previzualizare generată cu succes!');
         }
@@ -938,34 +961,51 @@
                 const scannedData = document.getElementById('scanner-input').value.trim();
                 
                 if (scannedData) {
-                    try {
-                        populateFormFromQR(scannedData);
-                        stopGryphonScanner();
-                        showNotification('QR scanat cu succes cu Gryphon! 🎉');
-                    } catch (error) {
-                        console.error('Eroare parsare:', error);
-                        showNotification('Date scanate, dar formatul nu este recunoscut: ' + scannedData, 'warning');
-                        
-                        // Afișează datele brute către utilizator
-                        setTimeout(() => {
-                            alert('Date QR/Barcode detectate:\n' + scannedData);
-                        }, 100);
-                    }
+                    // Procesează datele imediat
+                    processScannedData(scannedData);
                 } else {
                     showNotification('Nu s-au detectat date. Încearcă din nou.', 'error');
                 }
                 
                 // Reset input pentru următoarea scanare
                 document.getElementById('scanner-input').value = '';
+                return false; // Previne submit-ul formularului
             }
         }
         
         function handleGryphonData(event) {
             const scannedData = event.target.value;
             
-            // Verifică dacă sunt suficiente date (minim 10 caractere pentru un QR valid)
+            // Verifică dacă sunt suficiente date
             if (scannedData.length > 10) {
-                document.getElementById('gryphon-status').textContent = 'Date primite... Verificare format...';
+                document.getElementById('gryphon-status').textContent = 'Date primite... Procesare...';
+                
+                // Procesează automat dacă se detectează sfârșitul datelor
+                // Unele scannere nu trimit Enter, ci doar datele
+                clearTimeout(window.gryphonTimeout);
+                window.gryphonTimeout = setTimeout(() => {
+                    if (scannedData.length > 0 && gryphonActive) {
+                        processScannedData(scannedData);
+                        document.getElementById('scanner-input').value = '';
+                    }
+                }, 500); // Așteaptă 500ms pentru a fi sigur că s-au primit toate datele
+            }
+        }
+        
+        function processScannedData(scannedData) {
+            try {
+                populateFormFromQR(scannedData);
+                stopGryphonScanner();
+                showNotification('QR scanat cu succes cu Gryphon! 🎉');
+            } catch (error) {
+                console.error('Eroare parsare:', error);
+                showNotification('Date scanate: ' + scannedData.substring(0, 50) + '...', 'warning');
+                
+                // Afișează datele brute către utilizator
+                setTimeout(() => {
+                    alert('Date QR/Barcode detectate:\n' + scannedData);
+                    stopGryphonScanner();
+                }, 100);
             }
         }
         
@@ -1130,19 +1170,36 @@
                 const [labelPart, bucatiPart] = mainLine.split(' | ');
                 
                 if (labelPart && bucatiPart) {
+                    // Parsare îmbunătățită pentru a gestiona numele cu underscore
                     const parts = labelPart.split('_');
                     
                     if (parts.length >= 4) {
                         const specia = parts[0];
                         const tip = parts[1];
-                        const nume = parts[2];
-                        const calitate = parts[3];
                         
-                        const dimensionPart = parts[parts.length - 1];
-                        const dimensionMatch = dimensionPart.match(/(\d+)x(\d+)x(\d+)/);
+                        // Găsește dimensiunea la sfârșitul string-ului
+                        const dimensionMatch = labelPart.match(/(\d+)x(\d+)x(\d+)$/);
+                        let nume, calitate;
                         
                         if (dimensionMatch) {
+                            // Elimină dimensiunea din string pentru a obține numele și calitatea
+                            const withoutDimension = labelPart.replace(/_\d+x\d+x\d+$/, '');
+                            const partsWithoutDim = withoutDimension.split('_');
+                            
+                            // Prima parte este specia, a doua este tipul
+                            // Ultimele părți sunt calitatea
+                            // Tot ce e între tip și calitate este numele
+                            if (partsWithoutDim.length >= 4) {
+                                calitate = partsWithoutDim[partsWithoutDim.length - 1];
+                                
+                                // Numele este tot ce e între tip și calitate
+                                const numeParts = partsWithoutDim.slice(2, -1);
+                                nume = numeParts.join('_');
+                            }
+                            
                             const [, lungime, latime, grosime] = dimensionMatch;
+                            
+                            console.log('Parsare:', { specia, tip, nume, calitate, lungime, latime, grosime });
                             
                             document.getElementById('specia').value = specia;
                             document.getElementById('tip').value = tip;
@@ -1158,9 +1215,11 @@
                 } else {
                     showNotification('Format QR detectat, dar structura nu este recunoscută. Se afișează datele brute.', 'error');
                     alert('Date QR detectate:\n' + qrData);
+                    throw new Error('Format QR nerecunoscut');
                 }
             }
             
+            // Procesează dimensiunile adiționale
             for (let i = 1; i < lines.length - 1; i++) {
                 const line = lines[i];
                 const [labelPart, bucatiPart] = line.split(' | ');
@@ -1185,6 +1244,7 @@
                 }
             }
             
+            // Procesează locația
             if (lines.length > 1) {
                 const lastLine = lines[lines.length - 1];
                 const locationMatch = lastLine.match(/([A-G])-(\d+)-(\d+)/);
@@ -1215,9 +1275,9 @@
         }
 
         function simulateQRScan() {
-            const testQRData = `R_DIM_C24_PL_100x50x20 | 467
-R_DIM_C24_PL_80x40x15 | 234
-R_DIM_C24_PL_60x30x10 | 156
+            const testQRData = `R_DIM_KVH_C24_PL_100x50x20 | 467
+R_DIM_KVH_C24_PL_80x40x15 | 234
+R_DIM_KVH_C24_PL_60x30x10 | 156
 A-5-2`;
             
             populateFormFromQR(testQRData);
