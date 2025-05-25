@@ -259,6 +259,44 @@ button {
     min-height: 200px;
     background: #fafafa;
 }
+/* inceput logo */
+.logo-container {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 15px;
+}
+
+.company-logo {
+    height: 80px;
+    width: auto;
+    max-width: 200px;
+}
+
+/* Header cu titlul centrat */
+.header-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.header-section h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .logo-container {
+        justify-content: center;
+    }
+    
+    .company-logo {
+        height: 60px;
+    }
+}
+/* sfarsit logo */
 
 .label-preview {
     background: white;
