@@ -145,13 +145,16 @@
         <div class="button-group">
             <button class="btn-gryphon" onclick="startGryphonScanner()">🔫 Scanner Gryphon</button>
             <button class="btn-scanner" onclick="startCameraScanner()">📱 Camera</button>
-            <button class="btn-test" onclick="simulateQRScan()">🧪 Test QR</button>
+            <!-- <button class="btn-test" onclick="simulateQRScan()">🧪 Test QR</button> -->
              <!-- <button class="btn-test" onclick="simulateComplexQRScan()" style="background: linear-gradient(135deg, #3F51B5, #2196F3);">
     🧩 Test QR Complex
 </button> -->
             <button class="btn-primary" onclick="generatePreview()">Generează Previzualizare</button>
-            <button class="btn-secondary" onclick="printLabel()">Tipărește</button>
-            <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge Tot</button>
+            <button class="btn-print" onclick="printLabel()">
+                <i class="print-icon">🖨️</i> Tipărește
+            </button>
+            <!-- <button class="btn-secondary" onclick="printLabel()">Tipărește</button> -->
+            <button class="btn-secondary" onclick="clearForm()">🗑️ Șterge date din formular</button>
         </div>
 
         <div class="debug-info" id="debug-info">
